@@ -1,0 +1,47 @@
+[
+  {
+    "campaign_id": "camp_baba",
+    "campaign_name": "Baba Casino — Summer Push",
+    "advertiser_company_id": "acmp_baba",
+    "active": true,
+    "daily_budget": 500.0,
+    "geo_targets": ["US", "CA"],
+    "os_targets": ["ios", "android"],
+    "attribution_provider": "appsflyer",
+    "ios_store_url": "https://apps.apple.com/app/id1234567890",
+    "android_store_url": "https://play.google.com/store/apps/details?id=com.baba.casino",
+    "native_ad_set_ids": ["adset_native_a"],
+    "created_at": "2026-06-15T09:30:00Z",
+    "updated_at": "2026-07-01T14:00:00Z"
+  },
+  {
+    "campaign_id": "camp_galaxy",
+    "campaign_name": "Galaxy Quest RPG — Sci-Fi Launch",
+    "advertiser_company_id": "acmp_galaxy",
+    "active": true,
+    "daily_budget": 1200.0,
+    "geo_targets": ["US"],
+    "os_targets": ["ios"],
+    "attribution_provider": "adjust",
+    "ios_store_url": "https://apps.apple.com/app/id1098765432",
+    "android_store_url": null,
+    "native_ad_set_ids": ["adset_native_b"],
+    "created_at": "2026-06-20T18:45:00Z",
+    "updated_at": "2026-07-05T08:10:00Z"
+  },
+  {
+    "campaign_id": "camp_kitchen",
+    "campaign_name": "Kitchen Story Saga — EU Test",
+    "advertiser_company_id": "acmp_kitchen",
+    "active": false,
+    "daily_budget": 250.0,
+    "geo_targets": ["GB", "SE"],
+    "os_targets": ["android"],
+    "attribution_provider": "appsflyer",
+    "ios_store_url": null,
+    "android_store_url": "https://play.google.com/store/apps/details?id=com.kitchenstory.saga",
+    "native_ad_set_ids": ["adset_native_c"],
+    "created_at": "2026-07-02T11:00:00Z",
+    "updated_at": "2026-07-02T11:00:00Z"
+  }
+]

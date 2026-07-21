@@ -1,0 +1,594 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="{{ THEME }}">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <title>{{ CHAR_NAME }} · Sponsored</title>
+
+  <!-- AD VARIABLES — injected server-side by render_native (chevron). -->
+  <script>
+    const CHAR_NAME     = "{{ CHAR_NAME }}";
+    const CAMPAIGN      = "{{ CAMPAIGN }}";
+    const CHAR_MESSAGE  = "{{ CHAR_MESSAGE }}";
+    const CTA           = "{{ CTA }}";
+    const TRACKING_URL  = "{{ TRACKING_URL }}";
+    const IMPRESSION_URL = "{{ IMPRESSION_URL }}";
+    const AD_ID         = "{{ AD_ID }}";
+    const API_URL       = "{{ API_URL }}";
+    const API_KEY       = "{{ API_KEY }}";
+    const THEME         = "{{ THEME }}";
+  </script>
+  <style>
+    :root {
+      --text-primary: #ffffff;
+      --text-secondary: rgba(255, 255, 255, 0.62);
+      --media-border: #4b4b4b;
+    }
+
+    [data-theme="light"] {
+      --text-primary: #111827;
+      --text-secondary: rgba(0, 0, 0, 0.5);
+      --media-border: #e0e0e0;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    html,
+    body {
+      width: 100%;
+      height: 100%;
+      background: transparent;
+      color: var(--text-primary);
+      font-family: -apple-system, "SF Pro Text", system-ui, Roboto, Arial, sans-serif;
+      overflow: hidden;
+    }
+
+    body {
+      display: flex;
+      flex-direction: column;
+      cursor: pointer;
+    }
+
+    .media {
+      position: relative;
+      width: 100%;
+      aspect-ratio: 1 / 1;
+      flex: 0 0 auto;
+      border: 1px solid var(--media-border);
+      border-radius: 18px;
+      overflow: hidden;
+      background: transparent;
+    }
+
+    .media video,
+    .media img {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      display: block;
+      pointer-events: none;
+    }
+
+    /* Hide the video until it has a decoded frame — suppresses the WebView
+       default play-button artwork; the .media background shows instead. */
+    .media video {
+      opacity: 0;
+    }
+
+    .media video.is-ready {
+      opacity: 1;
+    }
+
+    .ad-badge {
+      position: absolute;
+      top: 12px;
+      left: 12px;
+      z-index: 3;
+      padding: 3px 7px;
+      border-radius: 6px;
+      font-size: 12px;
+      font-weight: 600;
+      letter-spacing: 0.04em;
+      background: rgba(0, 0, 0, 0.55);
+      color: rgba(255, 255, 255, 0.9);
+      border: 1px solid rgba(255, 255, 255, 0.12);
+    }
+
+    /* pop entrance — commented out
+    .media video,
+    .media img {
+      transform: scale(0);
+      opacity: 0;
+    }
+
+    .media video.pop-in,
+    .media img.pop-in {
+      animation: pop-entrance 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+    }
+
+    @keyframes pop-entrance {
+      0%   { transform: scale(0); opacity: 0; }
+      60%  { transform: scale(1.05); opacity: 1; }
+      100% { transform: scale(1); opacity: 1; }
+    }
+    */
+
+    .overlay {
+      position: absolute;
+      inset: 0;
+      z-index: 2;
+      display: flex;
+      flex-direction: column;
+      align-items: stretch;
+      justify-content: flex-end;
+      padding: 0 16px 18px;
+      gap: 10px;
+      background: linear-gradient(
+        to top,
+        rgba(0, 0, 0, 0.72) 0%,
+        rgba(0, 0, 0, 0.28) 38%,
+        transparent 62%
+      );
+    }
+
+    .chat-bubble {
+      position: relative;
+      align-self: center;
+      width: 100%;
+      max-width: 100%;
+      min-height: 42px;
+      padding: 12px 14px;
+      border-radius: 14px;
+      background: rgba(255, 255, 255, 0.94);
+      color: #111827;
+      line-height: 1.35;
+      font-size: 13px;
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.28);
+      overflow: visible;
+      transition:
+        width 0.45s ease,
+        max-width 0.45s ease,
+        height 0.35s ease,
+        padding 0.35s ease,
+        min-height 0.35s ease;
+    }
+
+    .chat-bubble.is-typing {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 64px;
+      max-width: 64px;
+      height: 32px;
+      min-height: 32px;
+      padding: 0;
+    }
+
+    .chat-bubble.is-typing .chat-text {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 100%;
+      height: 100%;
+      min-height: 0;
+      line-height: 1;
+    }
+
+    .chat-bubble.is-typing .typing-dots {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: auto;
+      min-height: 0;
+      gap: 4px;
+    }
+
+    .chat-bubble::before {
+      content: "";
+      position: absolute;
+      top: -8px;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 0;
+      height: 0;
+      border-left: 8px solid transparent;
+      border-right: 8px solid transparent;
+      border-bottom: 9px solid rgba(255, 255, 255, 0.94);
+    }
+
+    .chat-text {
+      white-space: pre-line;
+      display: block;
+      min-height: 1.2em;
+      overflow: hidden;
+    }
+
+    .typing-dots {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      min-height: 1em;
+    }
+
+    .typing-dots span {
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: #6b7280;
+      opacity: 0.25;
+      animation: dot-blink 0.6s infinite ease-in-out;
+    }
+
+    .typing-dots span:nth-child(2) {
+      animation-delay: 0.1s;
+    }
+
+    .typing-dots span:nth-child(3) {
+      animation-delay: 0.2s;
+    }
+
+    @keyframes dot-blink {
+      0%,
+      100% {
+        opacity: 0.25;
+      }
+      50% {
+        opacity: 1;
+      }
+    }
+
+    .cta-button {
+      width: 100%;
+      border: 1px solid #4b4b4b;
+      border-radius: 14px;
+      padding: 13px 16px;
+      font-size: 16px;
+      font-weight: 700;
+      color: #ffffff;
+      background: rgba(0, 0, 0, 0.38);
+      backdrop-filter: blur(6px);
+      -webkit-backdrop-filter: blur(6px);
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      transition: transform 0.2s ease, filter 0.2s ease;
+    }
+
+    .cta-button:hover {
+      filter: brightness(1.08);
+    }
+
+    .cta-button:active {
+      transform: scale(0.99);
+    }
+
+    .footer {
+      flex: 1 1 auto;
+      min-height: 0;
+      padding: 14px 16px 16px 0;
+      display: flex;
+      flex-direction: column;
+      justify-content: flex-start;
+      gap: 8px;
+      background: transparent;
+    }
+
+    .character-name {
+      font-size: 18px;
+      line-height: 1.1;
+      font-weight: 800;
+      letter-spacing: 0.01em;
+    }
+
+    .meta-row {
+      display: flex;
+      align-items: center;
+      justify-content: flex-start;
+      gap: 16px;
+      color: var(--text-secondary);
+      font-size: 12px;
+      font-weight: 500;
+    }
+
+    .author {
+      font-size: 12px;
+    }
+
+    .downloads {
+      font-size: 12px;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      white-space: nowrap;
+    }
+
+    .downloads svg,
+    .cta-button svg {
+      flex-shrink: 0;
+      fill: none;
+      stroke: currentColor;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+    }
+
+    .downloads svg {
+      width: 14px;
+      height: 14px;
+      stroke-width: 1.25;
+      opacity: 0.85;
+    }
+
+    .cta-button svg {
+      width: 16px;
+      height: 16px;
+      stroke-width: 2.5;
+    }
+
+  </style>
+</head>
+<body>
+  <section class="media" aria-label="Character ad media">
+    {{#MEDIA_IS_VIDEO}}
+    <!-- blank poster keeps the WebView from drawing its default play-button
+         placeholder while the first frame loads -->
+    <video src="{{ MEDIA_URL }}" autoplay loop muted playsinline
+           poster="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7"></video>
+    {{/MEDIA_IS_VIDEO}}
+    {{^MEDIA_IS_VIDEO}}
+    <img src="{{ MEDIA_URL }}" alt="" />
+    {{/MEDIA_IS_VIDEO}}
+    <span class="ad-badge">AD</span>
+
+    <div class="overlay">
+      <div class="chat-bubble is-typing" id="chat-bubble">
+        <span id="chat-text" class="chat-text">
+          <span class="typing-dots" aria-hidden="true"><span></span><span></span><span></span></span>
+        </span>
+      </div>
+      <button class="cta-button" id="cta-button" type="button">
+        <span id="cta-label"></span>
+        <svg viewBox="0 0 14 14" aria-hidden="true">
+          <path d="M5.5 3.5 8.5 7 5.5 10.5" />
+        </svg>
+      </button>
+    </div>
+  </section>
+
+  <footer class="footer">
+    <h1 class="character-name" id="character-name"></h1>
+    <div class="meta-row">
+      <span class="downloads">
+        <svg viewBox="0 0 14 14" aria-hidden="true">
+          <path d="M7 2.5v5.5" />
+          <path d="M4.75 5.25 7 7.5l2.25-2.25" />
+          <path d="M3.25 9.5V11h7.5V9.5" />
+        </svg>
+        {{ DOWNLOADS }}
+      </span>
+      <span class="author" id="author"></span>
+    </div>
+  </footer>
+
+  <script>
+    document.getElementById("character-name").textContent = CHAR_NAME;
+    document.getElementById("author").textContent = "@" + CAMPAIGN;
+    document.getElementById("cta-label").textContent = CTA;
+
+    function openCta() {
+      if (!TRACKING_URL) return;
+      fetch(`${API_URL}/impressions/${AD_ID}/click`, {
+        method: "POST",
+        headers: { "Authorization": `Bearer ${API_KEY}` },
+        keepalive: true,
+      }).catch(() => {});
+      window.open(TRACKING_URL, "_blank");
+    }
+
+   document.addEventListener("click", openCta);
+
+    (function () {
+      var typed = false, bridged = false, impressionFired = false;
+      var bubble = document.getElementById("chat-bubble");
+      var text = document.getElementById("chat-text");
+      var img = document.querySelector(".media img, .media video");
+
+      // --- Video keep-alive watchdog ---------------------------------------
+      // Native WebViews pause <video> when the app backgrounds (e.g. after a
+      // CTA tap opens the browser), when the feed cell recycles, or when the
+      // `loop` seek-to-zero fails (Android WebView). Nothing restarts it, so
+      // the creative freezes on a frame. Re-kick playback from every signal
+      // available to the page.
+      var video = document.querySelector(".media video");
+      var visibleRatio = 1; // assume in-view until the bridge reports otherwise
+      var srcReloaded = false;
+
+      // `force` bypasses the visibility/visibilityState gates — used by
+      // foreground signals (visibilitychange→visible, pageshow, the native
+      // bridge's onAppForeground) where we know the page is meant to be
+      // live again and should NOT wait for the next onVisibility push
+      // (which some hosts de-dupe away when the geometry hasn't changed).
+      function ensurePlaying(force) {
+        if (!video) return;
+        if (!force) {
+          if (visibleRatio <= 0) return;
+          if (document.visibilityState === "hidden") return;
+        }
+        if (!video.paused && !video.ended) return;
+        var p = video.play();
+        if (p && p.catch) p.catch(function () {});
+      }
+
+      if (video) {
+        // Hide the WebView default play-button artwork until a decoded frame
+        // is ready (pairs with the blank poster + .is-ready CSS).
+        var reveal = function () { video.classList.add("is-ready"); };
+        if (video.readyState >= 2) reveal();
+        else video.addEventListener("loadeddata", reveal, { once: true });
+
+        // Android WebView can silently drop the `loop` attribute at the
+        // boundary (needs a range-request seek); force the wrap-around.
+        video.addEventListener("ended", function () {
+          try { video.currentTime = 0; } catch (e) {}
+          ensurePlaying(false);
+        });
+        video.addEventListener("stalled", function () { ensurePlaying(false); });
+        video.addEventListener("suspend", function () { ensurePlaying(false); });
+        video.addEventListener("error", function () {
+          if (srcReloaded) return; // one recovery attempt only
+          srcReloaded = true;
+          var src = video.getAttribute("src");
+          if (!src) return;
+          video.setAttribute("src", src);
+          video.load();
+          ensurePlaying(false);
+        });
+
+        // Resume when the WebView comes back to foreground (post-CTA return,
+        // app switch) — the paused video does not resume on its own. These
+        // fire best-effort inside a nested srcdoc iframe; the clock-gap
+        // detector + onAppForeground bridge below are the reliable path.
+        document.addEventListener("visibilitychange", function () {
+          if (document.visibilityState === "visible") ensurePlaying(true);
+        });
+        window.addEventListener("pageshow", function () { ensurePlaying(true); });
+        window.addEventListener("focus", function () { ensurePlaying(true); });
+
+        // Autoplay blocked by the host WebView config: the first user
+        // gesture unlocks playback.
+        document.addEventListener("touchstart", function () { ensurePlaying(true); }, { once: true, passive: true });
+        document.addEventListener("click", function () { ensurePlaying(true); }, { once: true });
+      }
+      // ----------------------------------------------------------------------
+
+      // Fire the view-through / impression pixel once, when the creative is
+      // in-view. Null-safe: no-op when IMPRESSION_URL is empty (campaign has no
+      // impression tracker). Assigning src is what fires the request.
+      function fireImpression(url) {
+        if (impressionFired || !url) return;
+        impressionFired = true;
+        var px = new Image(1, 1);
+        px.referrerPolicy = "no-referrer-when-downgrade";
+        px.src = url; // assigning src fires the pixel
+      }
+
+      // Typing-animation state, tracked so a freeze mid-type (the page was
+      // suspended while the bubble was half-written) can be completed
+      // instantly by the self-heal below instead of staying stuck forever.
+      var typingChars = null, typingIndex = 0, typingInterval = null;
+
+      function finishTypingNow() {
+        if (!typingChars) return;
+        if (typingInterval) { clearInterval(typingInterval); typingInterval = null; }
+        text.textContent = typingChars.join("");
+        typingIndex = typingChars.length;
+      }
+
+      function typeMessage() {
+        if (typed) return;
+        typed = true;
+        typingChars = Array.from(CHAR_MESSAGE);
+        var step = Math.max(10, Math.floor(900 / typingChars.length));
+        typingIndex = 0;
+        setTimeout(function () {
+          text.textContent = "";
+          bubble.classList.remove("is-typing");
+          setTimeout(function () {
+            typingInterval = setInterval(function () {
+              typingIndex++;
+              text.textContent = typingChars.slice(0, typingIndex).join("");
+              if (typingIndex >= typingChars.length) {
+                clearInterval(typingInterval);
+                typingInterval = null;
+              }
+            }, step);
+          }, 450);
+        }, 500);
+      }
+
+      // --- Freeze detector + full self-heal ---------------------------------
+      // A backgrounded WebView can suspend its JS timers outright; when that
+      // happens, no in-page event (visibilitychange/pageshow/focus) is
+      // guaranteed to fire on the way back — the page simply resumes running
+      // wherever it left off. Detect the suspension by watching for a large
+      // gap between wall-clock ticks (a live 1s interval can't otherwise
+      // observe more than ~1s between calls) and self-heal on wake: verify
+      // the video actually advanced (a `stalled`-free freeze can still leave
+      // it "playing" but stuck on one frame) and complete any half-typed
+      // message rather than leaving it stuck mid-sentence.
+      var lastTick = Date.now();
+      setInterval(function () {
+        var now = Date.now();
+        var gap = now - lastTick;
+        lastTick = now;
+        if (gap > 2000) selfHeal();
+      }, 1000);
+
+      function selfHeal() {
+        finishTypingNow();
+        if (!video || visibleRatio <= 0) return;
+        var t0 = video.currentTime;
+        ensurePlaying(true);
+        setTimeout(function () {
+          if (!video.paused && !video.ended && video.currentTime === t0) {
+            // Not paused, yet the clock didn't move — genuinely stuck. Force
+            // a fresh decode pipeline rather than trusting play() again.
+            try { video.load(); } catch (e) {}
+            ensurePlaying(true);
+          }
+        }, 500);
+      }
+
+      // Deterministic wake-up the host SDK can call on every foreground
+      // transition (app resume, post-CTA return) — reaches the page even
+      // when its own timers/listeners are suspended, since evaluateJavascript
+      // (Android) / evaluateJavaScript (iOS) run independent of page timers.
+      window.onAppForeground = function () {
+        selfHeal();
+      };
+      // ----------------------------------------------------------------------
+
+      window.onVisibility = function (ratio) {
+        bridged = true;
+        visibleRatio = ratio;
+        // Every bridge call doubles as a playback self-heal: pause offscreen,
+        // (re)start whenever any part of the card is visible.
+        if (video) {
+          if (ratio <= 0) {
+            if (!video.paused) video.pause();
+          } else {
+            ensurePlaying(true);
+          }
+        }
+        if (ratio >= 0.5) {
+          if (!typed) typeMessage();
+          fireImpression(IMPRESSION_URL); // guarded, fires once
+        }
+
+        // pop entrance — commented out
+        // if (!popped && ratio >= 0.3 && img) { popped = true; img.classList.add("pop-in"); }
+
+        // zoom on exit — commented out
+        // if (!peaked && ratio >= 0.9) peaked = true;
+        // if (peaked && ratio < 0.66 && img) {
+        //   img.style.transform = "scale(" + (1.0 + 0.50 * (1.0 - ratio / 0.66)) + ")";
+        //   if (!zooming) { img.style.willChange = "transform"; zooming = true; }
+        // } else if (zooming && img) {
+        //   img.style.transform = "";
+        //   img.style.willChange = "";
+        //   zooming = false;
+        // }
+      };
+
+      setTimeout(function () { if (!bridged) typeMessage(); }, 3000);
+    })();
+  </script>
+</body>
+</html>

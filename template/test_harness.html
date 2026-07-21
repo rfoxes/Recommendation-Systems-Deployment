@@ -1,0 +1,297 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Character Ad — Scroll Test Harness</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: -apple-system, system-ui, sans-serif;
+      background: #1a1a1a;
+      color: #fff;
+    }
+    .spacer {
+      height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 18px;
+      color: rgba(255,255,255,0.3);
+      border-bottom: 1px solid rgba(255,255,255,0.08);
+    }
+    .ad-slot {
+      width: 400px;
+      height: 480px;
+      margin: 0 auto;
+      position: relative;
+    }
+    .ad-slot iframe {
+      width: 100%;
+      height: 100%;
+      border: none;
+      display: block;
+      border-radius: 18px;
+      overflow: hidden;
+    }
+    .hud {
+      position: fixed;
+      top: 16px;
+      right: 16px;
+      z-index: 999;
+      background: rgba(0,0,0,0.85);
+      backdrop-filter: blur(12px);
+      border: 1px solid rgba(255,255,255,0.15);
+      border-radius: 12px;
+      padding: 14px 18px;
+      font-size: 13px;
+      font-family: "SF Mono", monospace;
+      min-width: 220px;
+    }
+    .hud-label { color: rgba(255,255,255,0.5); }
+    .hud-value { color: #4ade80; font-weight: 700; font-size: 22px; }
+    .hud-bar {
+      margin-top: 8px;
+      height: 6px;
+      background: rgba(255,255,255,0.1);
+      border-radius: 3px;
+      overflow: hidden;
+    }
+    .hud-bar-fill {
+      height: 100%;
+      background: #4ade80;
+      border-radius: 3px;
+      transition: width 0.05s linear;
+    }
+    .hud-thresholds {
+      margin-top: 6px;
+      display: flex;
+      gap: 10px;
+      font-size: 11px;
+    }
+    .hud-thresholds span { color: rgba(255,255,255,0.35); }
+    .hud-thresholds span.active { color: #facc15; font-weight: 600; }
+    .hud-zoom { margin-top: 4px; color: #f87171; font-size: 11px; }
+    .hud-control {
+      margin-top: 10px;
+      padding-top: 10px;
+      border-top: 1px solid rgba(255,255,255,0.1);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 11px;
+      color: rgba(255,255,255,0.5);
+    }
+    .hud-control input {
+      width: 50px; padding: 3px 5px;
+      border: 1px solid rgba(255,255,255,0.2);
+      background: rgba(255,255,255,0.08); color: #fff; border-radius: 4px;
+      font-family: "SF Mono", monospace; font-size: 11px;
+      text-align: center;
+    }
+    .freeze-panel {
+      margin-top: 10px;
+      padding-top: 10px;
+      border-top: 1px solid rgba(255,255,255,0.1);
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+    .freeze-panel button {
+      font-family: "SF Mono", monospace;
+      font-size: 11px;
+      padding: 6px 8px;
+      border-radius: 6px;
+      border: 1px solid rgba(255,255,255,0.2);
+      background: rgba(255,255,255,0.06);
+      color: #fff;
+      cursor: pointer;
+      text-align: left;
+    }
+    .freeze-panel button:hover { background: rgba(255,255,255,0.14); }
+    .freeze-panel button:active { background: rgba(255,255,255,0.22); }
+    .freeze-log {
+      margin-top: 4px;
+      font-size: 10px;
+      color: rgba(255,255,255,0.4);
+      min-height: 14px;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="spacer">&#8595; Scroll down to see the ad enter the viewport &#8595;</div>
+
+  <div class="ad-slot">
+    <iframe id="ad-frame" src="character_ad.html"></iframe>
+  </div>
+
+  <div class="spacer">&#8593; The ad is above — scroll back up to see zoom reverse &#8593;</div>
+
+  <div class="hud">
+    <div class="hud-label">Visibility Ratio</div>
+    <div class="hud-value" id="hud-ratio">0.00</div>
+    <div class="hud-bar"><div class="hud-bar-fill" id="hud-bar"></div></div>
+    <div class="hud-thresholds">
+      <span id="t-zoom">25% zoom</span>
+      <span id="t-chat">50% chat</span>
+    </div>
+    <div class="hud-zoom" id="hud-zoom"></div>
+    <div class="hud-control">
+      <label>Entry at</label>
+      <input id="start-visibility" type="number" min="0" max="100" step="5" />
+      <span>% visible</span>
+    </div>
+    <div class="freeze-panel">
+      <div class="hud-label">Freeze / resume simulation</div>
+      <button id="btn-bg">1. Background (onVisibility 0)</button>
+      <button id="btn-suspend">2. Suspend page 3s (busy-wait)</button>
+      <button id="btn-fg">3. Foreground (onAppForeground + resync)</button>
+      <button id="btn-full">Run full sequence (1→2→3)</button>
+      <div class="freeze-log" id="freeze-log"></div>
+    </div>
+  </div>
+
+  <script>
+    var frame = document.getElementById("ad-frame");
+    var hudRatio = document.getElementById("hud-ratio");
+    var hudBar = document.getElementById("hud-bar");
+    var tZoom = document.getElementById("t-zoom");
+    var tChat = document.getElementById("t-chat");
+    var hudZoom = document.getElementById("hud-zoom");
+    var startInput = document.getElementById("start-visibility");
+
+    var entered = false;
+    var lastRatio = 0;
+
+    var saved = localStorage.getItem("harness_start_pct");
+    startInput.value = saved !== null ? saved : "0";
+
+    // Set spacer height so the ad starts at X% visible
+    var pct = parseFloat(startInput.value) / 100;
+    var spacer = document.querySelector(".spacer");
+    var adH = frame.offsetHeight;
+    // 0% = spacer is 100vh (ad fully off-screen)
+    // 50% = spacer is 100vh - half the ad height
+    // 100% = spacer is 100vh - full ad height
+    spacer.style.height = "calc(100vh - " + (pct * adH) + "px)";
+
+    startInput.addEventListener("change", function () {
+      localStorage.setItem("harness_start_pct", startInput.value);
+      location.reload();
+    });
+
+    // Re-send ratio after iframe loads (observer fires before iframe JS is ready)
+    frame.addEventListener("load", function () {
+      try {
+        if (typeof frame.contentWindow.onVisibility === "function") {
+          frame.contentWindow.onVisibility(lastRatio);
+        }
+      } catch (e) {}
+    });
+
+    // Thresholds: 0, 0.01, 0.02, ..., 1.0
+    var thresholds = [];
+    for (var i = 0; i <= 100; i++) thresholds.push(i / 100);
+
+    var observer = new IntersectionObserver(function (entries) {
+      var entry = entries[0];
+      var ratio = Math.round(entry.intersectionRatio * 100) / 100;
+      lastRatio = ratio;
+
+      // Update HUD
+      hudRatio.textContent = ratio.toFixed(2);
+      hudBar.style.width = (ratio * 100) + "%";
+      tZoom.className = (entered && ratio < 0.25) ? "active" : "";
+      tChat.className = ratio >= 0.5 ? "active" : "";
+
+      // Mark entered at 50%
+      if (!entered && ratio >= 0.5) entered = true;
+
+      // Bridge call — relay to iframe
+      try {
+        if (frame.contentWindow && typeof frame.contentWindow.onVisibility === "function") {
+          frame.contentWindow.onVisibility(ratio);
+        }
+      } catch (e) {}
+
+      // HUD scale readout
+      if (entered && ratio < 0.25) {
+        var scale = 1.0 + 0.25 * (1.0 - ratio / 0.25);
+        hudZoom.textContent = "img scale: " + scale.toFixed(3);
+      } else {
+        hudZoom.textContent = "";
+      }
+    }, { threshold: thresholds });
+
+    observer.observe(frame);
+
+    // --- Freeze / resume simulation ---------------------------------------
+    // Reproduces the exact sequence that used to leave the card frozen:
+    // background (visibility drops to 0) → the WebView's JS effectively
+    // stops running for a while (simulated here with a synchronous busy-wait,
+    // indistinguishable from real suspension to the freeze detector) →
+    // foreground return. Step 3 exercises both the deterministic
+    // `onAppForeground` bridge and a realistic re-push of the last known
+    // visibility ratio (mirroring what the native SDKs now do on resume).
+    var btnBg = document.getElementById("btn-bg");
+    var btnSuspend = document.getElementById("btn-suspend");
+    var btnFg = document.getElementById("btn-fg");
+    var btnFull = document.getElementById("btn-full");
+    var freezeLog = document.getElementById("freeze-log");
+    var preSuspendRatio = lastRatio;
+
+    function log(msg) {
+      freezeLog.textContent = msg;
+    }
+
+    function callFrame(fn) {
+      try {
+        if (frame.contentWindow && typeof frame.contentWindow[fn] === "function") {
+          return true;
+        }
+      } catch (e) {}
+      return false;
+    }
+
+    function simulateBackground() {
+      preSuspendRatio = lastRatio;
+      try { frame.contentWindow.onVisibility && frame.contentWindow.onVisibility(0); } catch (e) {}
+      log("Backgrounded — onVisibility(0) sent. Video should pause.");
+    }
+
+    function simulateSuspend() {
+      log("Suspending main thread for 3s (page + iframe timers stop)...");
+      // Deliberately synchronous: this blocks the whole page's JS, which is
+      // exactly what the clock-gap detector inside character_ad.html is
+      // designed to notice (no interval tick can fire during the block).
+      setTimeout(function () {
+        var until = Date.now() + 3000;
+        while (Date.now() < until) { /* busy-wait */ }
+        log("Suspend complete. Waiting for foreground step...");
+      }, 50);
+    }
+
+    function simulateForeground() {
+      if (callFrame("onAppForeground")) {
+        frame.contentWindow.onAppForeground();
+      }
+      try {
+        frame.contentWindow.onVisibility && frame.contentWindow.onVisibility(preSuspendRatio || lastRatio);
+      } catch (e) {}
+      log("Foregrounded — onAppForeground() + onVisibility(" + (preSuspendRatio || lastRatio).toFixed(2) + ") sent.");
+    }
+
+    btnBg.addEventListener("click", simulateBackground);
+    btnSuspend.addEventListener("click", simulateSuspend);
+    btnFg.addEventListener("click", simulateForeground);
+    btnFull.addEventListener("click", function () {
+      simulateBackground();
+      setTimeout(function () {
+        simulateSuspend();
+        setTimeout(simulateForeground, 3200);
+      }, 300);
+    });
+  </script>
+</body>
+</html>

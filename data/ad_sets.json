@@ -1,0 +1,61 @@
+[
+  {
+    "ad_set_id": "adset_native_a",
+    "campaign_id": "camp_baba",
+    "ad_set_name": "Baba — Hero Characters",
+    "active": true,
+    "character_names": ["Luna", "Rex"],
+    "video_urls": [
+      "https://storage.googleapis.com/simula-public/assets/creative-proposals/2b2b5247-1d9d-4b88-b8b9-95d21981edf8/sponsored-character-1.mp4"
+    ],
+    "ctas": ["Play Free", "Install Now"],
+    "ai_prompts": [
+      "Excitedly tell a friend about the daily bonus waiting for them at Baba Casino."
+    ],
+    "fallback_copy": [
+      "Spin to win big — claim your daily bonus now!",
+      "Check this out!"
+    ],
+    "created_at": "2026-06-15T10:00:00Z",
+    "updated_at": "2026-06-15T10:00:00Z"
+  },
+  {
+    "ad_set_id": "adset_native_b",
+    "campaign_id": "camp_galaxy",
+    "ad_set_name": "Galaxy Quest — Companions",
+    "active": true,
+    "character_names": ["Nova", "Captain Vex"],
+    "video_urls": [
+      "https://storage.googleapis.com/simula-public/assets/simula-campaigns/1781322499823-8.mp4"
+    ],
+    "ctas": ["Explore the Galaxy"],
+    "ai_prompts": [
+      "Invite the user to join you on a daring space adventure across uncharted star systems.",
+      "Tease the mystery of the abandoned starship only they can unlock."
+    ],
+    "fallback_copy": [
+      "Your starship awaits, commander."
+    ],
+    "created_at": "2026-06-20T19:00:00Z",
+    "updated_at": "2026-07-05T08:10:00Z"
+  },
+  {
+    "ad_set_id": "adset_native_c",
+    "campaign_id": "camp_kitchen",
+    "ad_set_name": "Kitchen Story — Chefs",
+    "active": true,
+    "character_names": ["Chef Miso"],
+    "video_urls": [
+      "https://storage.googleapis.com/simula-public/assets/creative-proposals/2b2b5247-1d9d-4b88-b8b9-95d21981edf8/sponsored-character-1.mp4"
+    ],
+    "ctas": ["Cook Now", "Get Cooking"],
+    "ai_prompts": [
+      "Warmly invite the user to open their own cozy cafe and serve their first customer."
+    ],
+    "fallback_copy": [
+      "Fresh recipes are waiting for you!"
+    ],
+    "created_at": "2026-07-02T11:05:00Z",
+    "updated_at": "2026-07-02T11:05:00Z"
+  }
+]
