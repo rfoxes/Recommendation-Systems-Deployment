@@ -21,6 +21,7 @@ There are three pieces you will be implementing:
    - [`template/test_harness.html`](template/test_harness.html) — open this locally to preview the rendered template in a scrollable feed.
 3. Sample request/response structures (inline throughout this document).
 4. An IP → country database: [`data/GeoLite2-City-Test.mmdb`](data/GeoLite2-City-Test.mmdb) (see [Test IPs](#test-ips)).
+5. The LLM prompt for generating the character's message: [`prompts/character_dialogue.json`](prompts/character_dialogue.json).
 
 ## Goals
 
@@ -173,7 +174,7 @@ The response returns the `impression_id` of the serve and the raw HTML of the re
 3. Filter out campaigns that do not match the user's country and operating system.
 4. Rank the remaining campaigns using your CTR model and ranker. Think about a good way to store user and context features so your models can easily access them at inference time.
 5. Select a random ad set and ad variant for the campaign you choose.
-6. Generate the ad copy for the selected variant by passing its `ai_prompt` to an LLM, and use the returned text as the character's message in the rendered template. If the call fails, fall back to the ad set's `fallback_copy`.
+6. Generate the ad copy for the selected variant by passing its `ai_prompt` to an LLM, and use the returned text as the character's message in the rendered template. Use the prompt in [`prompts/character_dialogue.json`](prompts/character_dialogue.json) — fill `{{CHAR_NAME}}` with the variant's `character_name` and `{{ai_prompt}}` with the variant's `ai_prompt`. If the call fails, fall back to the ad set's `fallback_copy`.
 7. Fill in the placeholder fields on the HTML template using the corresponding fields from the campaign and the ad variant.
 8. Create a data model to store the contents of a serve. Use this model to write the serve async to your database.
 9. Containerize your app and deploy it to a public endpoint on GCP / AWS.
