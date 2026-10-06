@@ -26,3 +26,6 @@ models/
 .mypy_cache/
 .pytest_cache/
 .ruff_cache/
+
+# Local recording script (not part of the submission)
+docs/recording_notes.md
