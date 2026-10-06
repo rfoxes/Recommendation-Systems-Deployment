@@ -7,7 +7,7 @@ click model, and their copy is written by an LLM ahead of time through Temporal.
 Built for the [Simula API take-home](docs/assignment.md): FastAPI · MongoDB · Redis · Temporal ·
 Cloud Run.
 
-- **Live:** _the deployed URL goes here_. It's deployed for the review window (landing page, `/demo`, `/docs`, `/ready`).
+- **Live:** https://simula-api-qq7vgo74ya-uc.a.run.app. It's deployed for the review window (landing page, `/demo`, `/docs`, `/ready`).
 - **Sample output:** [samples/](samples/). The README's sample request and every GeoIP test IP, run against the production backends (MongoDB Atlas, Upstash Redis, Temporal Cloud, Gemini).
 
 ## Run it locally (about 5 minutes)
@@ -111,7 +111,7 @@ uv run python scripts/sample_output.py http://localhost:8000  # writes samples/
   - template escaping
   - the LLM copy pipeline, with a fake LLM
   - the Temporal schedule and workflows
-- **The smoke test:** 20 checks against a running deployment, from dependencies to clicks. It fails if ad
+- **The smoke test:** 21 checks against a running deployment, from dependencies to clicks. It fails if ad
   copy came from the fallback.
 
 ## How it works

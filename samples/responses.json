@@ -5,7 +5,7 @@
     "temporal": "connected",
     "ctr_model": {
       "source": "rfoxes/Recommendation-Systems@v1.0.0",
-      "golden_sample_max_diff": 1.6391277313232422e-07
+      "golden_sample_max_diff": 2.086162567138672e-07
     },
     "llm": {
       "provider": "gemini",
@@ -15,12 +15,12 @@
       "active_variants": 9,
       "with_pregenerated_lines": 9
     },
-    "campaign_cache_last_refresh": "2026-10-06T21:04:57.669000+00:00"
+    "campaign_cache_last_refresh": "2026-10-06T23:52:24.868000+00:00"
   },
   "readme_request_us_iphone": {
     "request": {
       "position": 3,
-      "session_id": "sess_581dcaf28066",
+      "session_id": "sess_4876ed18bdcb",
       "context": {
         "searchTerm": "space adventure",
         "tags": [
@@ -35,14 +35,14 @@
     "status": 200,
     "session_status": 201,
     "response": {
-      "impression_id": "imp_faebc2ba8fbf",
+      "impression_id": "imp_03cf8999393a",
       "rendered_html": "see readme_request_us_iphone.html"
     }
   },
   "us_android": {
     "request": {
       "position": 3,
-      "session_id": "sess_ae6b6677969c",
+      "session_id": "sess_0efa1c529122",
       "context": {
         "searchTerm": "space adventure",
         "tags": [
@@ -57,14 +57,14 @@
     "status": 200,
     "session_status": 201,
     "response": {
-      "impression_id": "imp_b02950f9175f",
+      "impression_id": "imp_b6b88e198fd8",
       "rendered_html": "see us_android.html"
     }
   },
   "us_iphone_fantasy_chat": {
     "request": {
       "position": 3,
-      "session_id": "sess_5b8926e0d3c4",
+      "session_id": "sess_1a337126e622",
       "context": {
         "searchTerm": "dragons",
         "tags": [
@@ -78,14 +78,14 @@
     "status": 200,
     "session_status": 201,
     "response": {
-      "impression_id": "imp_d2f92a8aff60",
+      "impression_id": "imp_6293129895af",
       "rendered_html": "see us_iphone_fantasy_chat.html"
     }
   },
   "gb_android": {
     "request": {
       "position": 3,
-      "session_id": "sess_3a51c2e722ab",
+      "session_id": "sess_3969c4cbb3d6",
       "context": {
         "searchTerm": "space adventure",
         "tags": [
@@ -104,7 +104,7 @@
   "se_android": {
     "request": {
       "position": 3,
-      "session_id": "sess_48bc5955d0df",
+      "session_id": "sess_422bd7731302",
       "context": {
         "searchTerm": "space adventure",
         "tags": [
@@ -123,7 +123,7 @@
   "cn_iphone": {
     "request": {
       "position": 3,
-      "session_id": "sess_fa23b385e52d",
+      "session_id": "sess_ab058e84b069",
       "context": {
         "searchTerm": "space adventure",
         "tags": [
@@ -142,7 +142,7 @@
   "ph_iphone": {
     "request": {
       "position": 3,
-      "session_id": "sess_cdaaf30b8360",
+      "session_id": "sess_6fd6b6f7d3b8",
       "context": {
         "searchTerm": "space adventure",
         "tags": [
@@ -161,7 +161,7 @@
   "bt_android": {
     "request": {
       "position": 3,
-      "session_id": "sess_12a191345340",
+      "session_id": "sess_718af298035d",
       "context": {
         "searchTerm": "space adventure",
         "tags": [
@@ -180,7 +180,7 @@
   "us_desktop": {
     "request": {
       "position": 3,
-      "session_id": "sess_34c104e48d35",
+      "session_id": "sess_9ac1a1de49ba",
       "context": {
         "searchTerm": "space adventure",
         "tags": [
@@ -199,29 +199,29 @@
   "ranking_explained": {
     "country": "US",
     "os": "ios",
-    "campaign_id": "camp_galaxy",
-    "variant_id": "var_b_04",
+    "campaign_id": "camp_baba",
+    "variant_id": "var_a_03",
     "ranking_reason": "best_score",
     "copy_source": "pool",
     "candidates": [
       {
-        "campaign_id": "camp_galaxy",
-        "p_v1": 0.1557250210611886,
-        "p_lightgbm": 0.12437319419031782,
-        "p_fm": 0.19323588907718658,
-        "score": -1.6903864795768564,
-        "uncertainty": 0.6560883821055435
+        "campaign_id": "camp_baba",
+        "p_v1": 0.09570704994263132,
+        "p_lightgbm": 0.0634773259049479,
+        "p_fm": 0.14182284474372864,
+        "score": -2.24586140483636,
+        "uncertainty": 0.824632349767484
       },
       {
-        "campaign_id": "camp_baba",
-        "p_v1": 0.1557250210611886,
-        "p_lightgbm": 0.12437319419031782,
-        "p_fm": 0.19323588907718658,
-        "score": -1.6903864795768564,
-        "uncertainty": 0.6434195443411606
+        "campaign_id": "camp_galaxy",
+        "p_v1": 0.08876602386250113,
+        "p_lightgbm": 0.061293077706540945,
+        "p_fm": 0.1268884390592575,
+        "score": -2.5272466747848727,
+        "uncertainty": 0.8351967460527531
       }
     ],
-    "latency_ms": 95.61
+    "latency_ms": 9.0
   },
   "clicks": [
     401,
