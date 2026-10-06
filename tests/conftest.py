@@ -1,5 +1,6 @@
 import asyncio
 from collections.abc import AsyncIterator, Iterator
+from pathlib import Path
 
 import pytest
 from fastapi.testclient import TestClient
@@ -26,8 +27,12 @@ def anyio_backend() -> str:
 
 
 @pytest.fixture
-def settings(monkeypatch: pytest.MonkeyPatch) -> Iterator[Settings]:
-    """Point the app at an isolated test database and Redis db, with Temporal off."""
+def settings(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> Iterator[Settings]:
+    """Point the app at an isolated test database and Redis db, with Temporal off.
+
+    Runs from an empty directory so a developer's .env (e.g. a real LLM key) is never read by tests.
+    """
+    monkeypatch.chdir(tmp_path)
     monkeypatch.setenv("MONGO_DB", TEST_MONGO_DB)
     monkeypatch.setenv("REDIS_URL", TEST_REDIS_URL)
     monkeypatch.setenv("TEMPORAL_ENABLED", "false")

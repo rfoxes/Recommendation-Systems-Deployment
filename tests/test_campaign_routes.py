@@ -35,7 +35,9 @@ def test_create_sets_api_owned_fields_and_writes_db_and_cache(client: TestClient
     assert body["active"] is False
     assert body["version"] == 1
     assert body["created_at"] and body["updated_at"]
-    assert mongo["campaigns"].find_one({"_id": body["campaign_id"]})["campaign_name"] == README_CAMPAIGN["campaign_name"]
+    assert (
+        mongo["campaigns"].find_one({"_id": body["campaign_id"]})["campaign_name"] == README_CAMPAIGN["campaign_name"]
+    )
     assert cached(redis_sync, body["campaign_id"])["version"] == 1
 
 

@@ -17,7 +17,9 @@ async def test_holds_only_active_servable_items(async_db: Database, store: Campa
     assert baba_variants == {"var_a_01", "var_a_02", "var_a_03"}  # var_a_04 is inactive
 
 
-async def test_activation_shows_up_after_version_bump(async_db: Database, store: CampaignStore, cache: CampaignCache) -> None:
+async def test_activation_shows_up_after_version_bump(
+    async_db: Database, store: CampaignStore, cache: CampaignCache
+) -> None:
     catalog = ActiveCatalog(async_db, store, cache, check_interval=0)
     assert "camp_kitchen" not in {i.campaign.campaign_id for i in await catalog.campaigns()}
     await store.update("camp_kitchen", CampaignUpdate(active=True))

@@ -15,9 +15,7 @@ TEST_DB = "simula_test"
 
 @pytest.fixture
 async def db() -> AsyncIterator[Database]:
-    client: AsyncMongoClient = AsyncMongoClient(
-        get_settings().mongo_uri, tz_aware=True, serverSelectionTimeoutMS=1000
-    )
+    client: AsyncMongoClient = AsyncMongoClient(get_settings().mongo_uri, tz_aware=True, serverSelectionTimeoutMS=1000)
     try:
         await client.admin.command("ping")
     except PyMongoError:

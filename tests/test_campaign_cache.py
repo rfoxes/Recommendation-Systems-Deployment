@@ -11,7 +11,11 @@ pytestmark = [pytest.mark.integration, pytest.mark.anyio]
 
 def campaign(version: int, budget: float) -> Campaign:
     return Campaign(
-        campaign_id="camp_race", campaign_name="Race", advertiser_company_id="acmp_x", version=version, daily_budget=budget
+        campaign_id="camp_race",
+        campaign_name="Race",
+        advertiser_company_id="acmp_x",
+        version=version,
+        daily_budget=budget,
     )
 
 
@@ -30,7 +34,9 @@ async def test_late_write_cannot_resurrect_a_deleted_campaign(cache: CampaignCac
     assert await cache.get("camp_race") is None
 
 
-async def test_refresh_repairs_drift_and_leaves_no_ttl(store: CampaignStore, async_db: Database, async_redis: Redis) -> None:
+async def test_refresh_repairs_drift_and_leaves_no_ttl(
+    store: CampaignStore, async_db: Database, async_redis: Redis
+) -> None:
     await store.refresh_cache()
     await async_db[CAMPAIGNS].delete_one({"_id": "camp_kitchen"})  # changed behind the cache's back
     refreshed = await store.refresh_cache()
