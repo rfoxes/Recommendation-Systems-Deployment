@@ -7,8 +7,8 @@ click model, and their copy is written by an LLM ahead of time through Temporal.
 Built for the [Simula API take-home](docs/assignment.md): FastAPI · MongoDB · Redis · Temporal ·
 Cloud Run.
 
-- **Live:** _the deployed URL goes here_ (landing page, `/demo`, `/docs`, `/ready`)
-- **Sample output:** [samples/](samples/), the README's sample requests run against the deployed service
+- **Live:** _the deployed URL goes here_. It's deployed for the review window (landing page, `/demo`, `/docs`, `/ready`).
+- **Sample output:** [samples/](samples/). The README's sample request and every GeoIP test IP, run against the production backends (MongoDB Atlas, Upstash Redis, Temporal Cloud, Gemini).
 
 ## Run it locally (about 5 minutes)
 
@@ -16,7 +16,7 @@ You need [Docker Desktop](https://www.docker.com/products/docker-desktop/) and
 [uv](https://docs.astral.sh/uv/getting-started/installation/). uv installs Python 3.13 by itself.
 
 ```bash
-git clone -b v1 https://github.com/rfoxes/Recommendation-Systems-Deployment.git
+git clone https://github.com/rfoxes/Recommendation-Systems-Deployment.git
 cd Recommendation-Systems-Deployment
 cp .env.example .env            # works as-is; optionally add an LLM key (see below)
 docker compose up -d --wait     # MongoDB (one-node replica set), Redis, Temporal dev server
@@ -91,13 +91,25 @@ curl -s -X POST localhost:8000/adsets -H 'Content-Type: application/json' \
 ## Tests
 
 ```bash
-uv run pytest                                                 # 46 tests; needs `docker compose up`
+uv run pytest                                                 # 123 tests; needs `docker compose up`
+uv run ruff check . && uv run ruff format --check . && uv run mypy   # lint, format, strict typing
 uv run python scripts/smoke_test.py http://localhost:8000     # end to end; add --allow-fallback without an LLM key
 uv run python scripts/sample_output.py http://localhost:8000  # writes samples/
 ```
 
-- **`pytest`:** model validation, seeding, the campaign routes, cache consistency under concurrent writes,
-  the in-memory serving catalog, and the Temporal workflow and schedule.
+- **`pytest`:** integration tests against real MongoDB, Redis and a Temporal test server. They never read
+  your `.env`, so a real LLM key isn't used. Covered:
+  - every README route
+  - all six GeoIP test IPs, end to end
+  - brand safety and the repeat cap
+  - clicks and safe retries
+  - transaction rollback and session expiry
+  - the rate limit
+  - cache consistency under concurrent writes
+  - the ranker's exploration rules
+  - template escaping
+  - the LLM copy pipeline, with a fake LLM
+  - the Temporal schedule and workflows
 - **The smoke test:** 21 checks against a running deployment, from dependencies to clicks. It fails if ad
   copy came from the fallback.
 

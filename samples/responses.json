@@ -1,0 +1,250 @@
+{
+  "ready": {
+    "mongo": "ok",
+    "redis": "ok",
+    "temporal": "connected",
+    "ctr_model": {
+      "source": "rfoxes/Recommendation-Systems@v1.0.0",
+      "golden_sample_max_diff": 1.6391277313232422e-07
+    },
+    "llm": {
+      "provider": "gemini",
+      "model": "gemini-3.5-flash-lite"
+    },
+    "ad_copy": {
+      "active_variants": 9,
+      "with_pregenerated_lines": 9
+    },
+    "campaign_cache_last_refresh": "2026-10-06T21:04:57.669000+00:00"
+  },
+  "readme_request_us_iphone": {
+    "request": {
+      "position": 3,
+      "session_id": "sess_581dcaf28066",
+      "context": {
+        "searchTerm": "space adventure",
+        "tags": [
+          "sci-fi",
+          "rpg"
+        ],
+        "category": "roleplay",
+        "title": "Galaxy Companion",
+        "nsfw": false
+      }
+    },
+    "status": 200,
+    "session_status": 201,
+    "response": {
+      "impression_id": "imp_faebc2ba8fbf",
+      "rendered_html": "see readme_request_us_iphone.html"
+    }
+  },
+  "us_android": {
+    "request": {
+      "position": 3,
+      "session_id": "sess_ae6b6677969c",
+      "context": {
+        "searchTerm": "space adventure",
+        "tags": [
+          "sci-fi",
+          "rpg"
+        ],
+        "category": "roleplay",
+        "title": "Galaxy Companion",
+        "nsfw": false
+      }
+    },
+    "status": 200,
+    "session_status": 201,
+    "response": {
+      "impression_id": "imp_b02950f9175f",
+      "rendered_html": "see us_android.html"
+    }
+  },
+  "us_iphone_fantasy_chat": {
+    "request": {
+      "position": 3,
+      "session_id": "sess_5b8926e0d3c4",
+      "context": {
+        "searchTerm": "dragons",
+        "tags": [
+          "fantasy"
+        ],
+        "category": "roleplay",
+        "title": "Dragon Rider",
+        "nsfw": false
+      }
+    },
+    "status": 200,
+    "session_status": 201,
+    "response": {
+      "impression_id": "imp_d2f92a8aff60",
+      "rendered_html": "see us_iphone_fantasy_chat.html"
+    }
+  },
+  "gb_android": {
+    "request": {
+      "position": 3,
+      "session_id": "sess_3a51c2e722ab",
+      "context": {
+        "searchTerm": "space adventure",
+        "tags": [
+          "sci-fi",
+          "rpg"
+        ],
+        "category": "roleplay",
+        "title": "Galaxy Companion",
+        "nsfw": false
+      }
+    },
+    "status": 204,
+    "session_status": 201,
+    "response": null
+  },
+  "se_android": {
+    "request": {
+      "position": 3,
+      "session_id": "sess_48bc5955d0df",
+      "context": {
+        "searchTerm": "space adventure",
+        "tags": [
+          "sci-fi",
+          "rpg"
+        ],
+        "category": "roleplay",
+        "title": "Galaxy Companion",
+        "nsfw": false
+      }
+    },
+    "status": 204,
+    "session_status": 201,
+    "response": null
+  },
+  "cn_iphone": {
+    "request": {
+      "position": 3,
+      "session_id": "sess_fa23b385e52d",
+      "context": {
+        "searchTerm": "space adventure",
+        "tags": [
+          "sci-fi",
+          "rpg"
+        ],
+        "category": "roleplay",
+        "title": "Galaxy Companion",
+        "nsfw": false
+      }
+    },
+    "status": 204,
+    "session_status": 201,
+    "response": null
+  },
+  "ph_iphone": {
+    "request": {
+      "position": 3,
+      "session_id": "sess_cdaaf30b8360",
+      "context": {
+        "searchTerm": "space adventure",
+        "tags": [
+          "sci-fi",
+          "rpg"
+        ],
+        "category": "roleplay",
+        "title": "Galaxy Companion",
+        "nsfw": false
+      }
+    },
+    "status": 204,
+    "session_status": 201,
+    "response": null
+  },
+  "bt_android": {
+    "request": {
+      "position": 3,
+      "session_id": "sess_12a191345340",
+      "context": {
+        "searchTerm": "space adventure",
+        "tags": [
+          "sci-fi",
+          "rpg"
+        ],
+        "category": "roleplay",
+        "title": "Galaxy Companion",
+        "nsfw": false
+      }
+    },
+    "status": 204,
+    "session_status": 201,
+    "response": null
+  },
+  "us_iphone_nsfw_chat": {
+    "request": {
+      "position": 3,
+      "session_id": "sess_f66aa88cf873",
+      "context": {
+        "searchTerm": "space adventure",
+        "tags": [
+          "sci-fi",
+          "rpg"
+        ],
+        "category": "roleplay",
+        "title": "Galaxy Companion",
+        "nsfw": true
+      }
+    },
+    "status": 204,
+    "session_status": 201,
+    "response": null
+  },
+  "us_desktop": {
+    "request": {
+      "position": 3,
+      "session_id": "sess_34c104e48d35",
+      "context": {
+        "searchTerm": "space adventure",
+        "tags": [
+          "sci-fi",
+          "rpg"
+        ],
+        "category": "roleplay",
+        "title": "Galaxy Companion",
+        "nsfw": false
+      }
+    },
+    "status": 204,
+    "session_status": 201,
+    "response": null
+  },
+  "ranking_explained": {
+    "country": "US",
+    "os": "ios",
+    "campaign_id": "camp_galaxy",
+    "variant_id": "var_b_04",
+    "ranking_reason": "best_score",
+    "copy_source": "pool",
+    "candidates": [
+      {
+        "campaign_id": "camp_galaxy",
+        "p_v1": 0.1557250210611886,
+        "p_lightgbm": 0.12437319419031782,
+        "p_fm": 0.19323588907718658,
+        "score": -1.6903864795768564,
+        "uncertainty": 0.6560883821055435
+      },
+      {
+        "campaign_id": "camp_baba",
+        "p_v1": 0.1557250210611886,
+        "p_lightgbm": 0.12437319419031782,
+        "p_fm": 0.19323588907718658,
+        "score": -1.6903864795768564,
+        "uncertainty": 0.6434195443411606
+      }
+    ],
+    "latency_ms": 95.61
+  },
+  "clicks": [
+    401,
+    204,
+    204
+  ]
+}

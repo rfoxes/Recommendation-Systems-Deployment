@@ -42,7 +42,11 @@ def main() -> None:
     deadline = time.time() + 90
     while (ready := c.get("/ready").json())["temporal"] != "connected" and time.time() < deadline:
         time.sleep(3)
-    check(ready["mongo"] == "ok" and ready["redis"] == "ok", "MongoDB and Redis reachable", f"{ready['mongo']}/{ready['redis']}")
+    check(
+        ready["mongo"] == "ok" and ready["redis"] == "ok",
+        "MongoDB and Redis reachable",
+        f"{ready['mongo']}/{ready['redis']}",
+    )
     check(ready["temporal"] == "connected", "Temporal worker connected", ready["temporal"])
     check("golden_sample_max_diff" in ready["ctr_model"], "CTR model loaded and verified", ready["ctr_model"])
     llm_ok = isinstance(ready["llm"], dict)
@@ -53,9 +57,12 @@ def main() -> None:
 
     # 2. Campaign with a safe retry, then activate it
     campaign = {
-        "campaign_name": f"Smoke Test {run} — Bhutan", "advertiser_company_id": "acmp_smoke",
-        "geo_targets": ["BT"], "os_targets": ["ios", "android"],
-        "ios_store_url": "https://apps.apple.com/app/id1", "android_store_url": "https://play.google.com/store/apps/details?id=smoke",
+        "campaign_name": f"Smoke Test {run} — Bhutan",
+        "advertiser_company_id": "acmp_smoke",
+        "geo_targets": ["BT"],
+        "os_targets": ["ios", "android"],
+        "ios_store_url": "https://apps.apple.com/app/id1",
+        "android_store_url": "https://play.google.com/store/apps/details?id=smoke",
     }
     first = c.post("/campaigns", json=campaign, headers={"Idempotency-Key": f"camp-{run}"})
     retry = c.post("/campaigns", json=campaign, headers={"Idempotency-Key": f"camp-{run}"})
@@ -67,13 +74,19 @@ def main() -> None:
     try:
         # 3. Ad set: variants are the cartesian product; safe retry
         ad_set = {
-            "campaign_id": camp_id, "ad_set_name": "Smoke heroes", "character_names": ["Luna", "Rex"],
+            "campaign_id": camp_id,
+            "ad_set_name": "Smoke heroes",
+            "character_names": ["Luna", "Rex"],
             "video_urls": ["https://storage.googleapis.com/simula-public/assets/simula-campaigns/1781322499823-8.mp4"],
-            "ctas": ["Play Free"], "ai_prompts": ["Excitedly tell a friend about tonight's dragon raid."],
+            "ctas": ["Play Free"],
+            "ai_prompts": ["Excitedly tell a friend about tonight's dragon raid."],
             "fallback_copy": FALLBACK,
         }
         created = c.post("/adsets", json=ad_set, headers={"Idempotency-Key": f"adset-{run}"})
-        check(created.status_code == 201 and len(created.json()["variants"]) == 2, "POST /adsets creates 2 x 1 x 1 x 1 = 2 variants")
+        check(
+            created.status_code == 201 and len(created.json()["variants"]) == 2,
+            "POST /adsets creates 2 x 1 x 1 x 1 = 2 variants",
+        )
         again = c.post("/adsets", json=ad_set, headers={"Idempotency-Key": f"adset-{run}"})
         check(again.json()["ad_set_id"] == created.json()["ad_set_id"], "retry returns the same ad set")
 
@@ -82,7 +95,9 @@ def main() -> None:
             deadline = time.time() + args.copy_timeout
             source = None
             while time.time() < deadline:
-                demo = c.post("/demo/serve", json={"ip": BT_IP, "device": "ios", "ppid": f"smoke-copy-{run}-{int(time.time())}"})
+                demo = c.post(
+                    "/demo/serve", json={"ip": BT_IP, "device": "ios", "ppid": f"smoke-copy-{run}-{int(time.time())}"}
+                )
                 if demo.status_code == 404:
                     print("  (demo disabled: skipping the copy-source check)")
                     break
@@ -101,26 +116,48 @@ def main() -> None:
         # 6. Serving
         served = c.post(
             "/load/native",
-            json={"position": 3, "session_id": s1.json()["session_id"],
-                  "context": {"searchTerm": "dragons", "tags": ["fantasy"], "category": "roleplay", "title": "Dragon Rider", "nsfw": False}},
+            json={
+                "position": 3,
+                "session_id": s1.json()["session_id"],
+                "context": {
+                    "searchTerm": "dragons",
+                    "tags": ["fantasy"],
+                    "category": "roleplay",
+                    "title": "Dragon Rider",
+                    "nsfw": False,
+                },
+            },
             headers={"X-Forwarded-For": BT_IP, "User-Agent": IPHONE},
         )
         check(served.status_code == 200, "POST /load/native serves an ad", served.status_code)
         html = served.json()["rendered_html"]
-        check(f"Smoke Test {run}" in html and "{{" not in html, "rendered template has the campaign and no placeholders")
+        check(
+            f"Smoke Test {run}" in html and "{{" not in html, "rendered template has the campaign and no placeholders"
+        )
         if llm_ok:
             check(FALLBACK[0] not in html, "character message is LLM copy, not fallback copy")
-        nsfw = c.post("/load/native", json={"position": 3, "session_id": s1.json()["session_id"], "context": {"nsfw": True}},
-                      headers={"X-Forwarded-For": BT_IP, "User-Agent": IPHONE})
+        nsfw = c.post(
+            "/load/native",
+            json={"position": 3, "session_id": s1.json()["session_id"], "context": {"nsfw": True}},
+            headers={"X-Forwarded-For": BT_IP, "User-Agent": IPHONE},
+        )
         check(nsfw.status_code == 204, "brand safety: an sfw-only campaign doesn't serve in an nsfw chat")
 
         # 7. Clicks
         imp = served.json()["impression_id"]
-        check(c.post(f"/impressions/{imp}/click", headers={"Authorization": "Bearer wrong"}).status_code == 401, "click with a wrong key -> 401")
+        check(
+            c.post(f"/impressions/{imp}/click", headers={"Authorization": "Bearer wrong"}).status_code == 401,
+            "click with a wrong key -> 401",
+        )
         auth = {"Authorization": f"Bearer {args.click_key}"}
         check(c.post(f"/impressions/{imp}/click", headers=auth).status_code == 204, "click recorded")
-        check(c.post(f"/impressions/{imp}/click", headers=auth).status_code == 204, "repeat click accepted (counted once)")
-        check(any(x["campaign_id"] == camp_id for x in c.get("/campaigns?active=true").json()), "campaign listed from the cache")
+        check(
+            c.post(f"/impressions/{imp}/click", headers=auth).status_code == 204, "repeat click accepted (counted once)"
+        )
+        check(
+            any(x["campaign_id"] == camp_id for x in c.get("/campaigns?active=true").json()),
+            "campaign listed from the cache",
+        )
     finally:
         # 8. Cleanup (cascades to the ad set and variants)
         check(c.delete(f"/campaigns/{camp_id}").status_code == 204, "cleanup: DELETE campaign")
