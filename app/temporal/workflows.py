@@ -14,7 +14,8 @@ LLM_RETRY = RetryPolicy(
     maximum_interval=timedelta(minutes=2),
     maximum_attempts=6,
 )
-COPY_CONCURRENCY = 3  # variants generated at once; keeps free-tier rate limits happy
+COPY_CONCURRENCY = 3  # variants in flight at once; the LLM task queue's rate limit does the pacing
+LLM_TASK_QUEUE_SUFFIX = "-llm"
 
 
 @workflow.defn(name="RefreshCampaignCache")
@@ -51,6 +52,8 @@ class GenerateAdCopyWorkflow:
                     workflow.execute_activity_method(
                         CopyActivities.generate_variant_copy,
                         job,
+                        task_queue=workflow.info().task_queue + LLM_TASK_QUEUE_SUFFIX,
+                        schedule_to_start_timeout=timedelta(hours=1),  # may queue behind the rate limit
                         start_to_close_timeout=timedelta(seconds=90),
                         retry_policy=LLM_RETRY,
                     )

@@ -29,7 +29,7 @@ from temporalio.common import WorkflowIDConflictPolicy
 from temporalio.worker import Worker
 
 from app.config import Settings
-from app.temporal.workflows import GenerateAdCopyWorkflow, RefreshCampaignCacheWorkflow
+from app.temporal.workflows import LLM_TASK_QUEUE_SUFFIX, GenerateAdCopyWorkflow, RefreshCampaignCacheWorkflow
 
 logger = logging.getLogger(__name__)
 
@@ -80,9 +80,15 @@ async def ensure_schedule(client: Client, task_queue: str) -> None:
 class TemporalRunner:
     """Runs the worker as a background task, so the API starts serving without waiting on Temporal."""
 
-    def __init__(self, settings: Settings, activities: Sequence[Callable[..., Any]]) -> None:
+    def __init__(
+        self,
+        settings: Settings,
+        activities: Sequence[Callable[..., Any]],
+        llm_activities: Sequence[Callable[..., Any]] = (),
+    ) -> None:
         self._settings = settings
         self._activities = activities
+        self._llm_activities = llm_activities
         self._client: Client | None = None
         self._task: asyncio.Task[None] | None = None
 
@@ -126,6 +132,17 @@ class TemporalRunner:
                     activities=self._activities,
                     graceful_shutdown_timeout=timedelta(seconds=5),
                 )
+                # LLM calls get their own task queue, rate-limited by the Temporal server across all workers:
+                # each activity makes `copy_pool_size` requests, so this caps requests/minute at the setting.
+                llm_worker = Worker(
+                    client,
+                    task_queue=self._settings.temporal_task_queue + LLM_TASK_QUEUE_SUFFIX,
+                    activities=self._llm_activities,
+                    max_task_queue_activities_per_second=(
+                        self._settings.llm_requests_per_minute / 60 / self._settings.copy_pool_size
+                    ),
+                    graceful_shutdown_timeout=timedelta(seconds=5),
+                )
                 self._client = client
                 # Fill in copy for any variant still missing it (seed data, missed triggers).
                 await client.start_workflow(
@@ -136,7 +153,7 @@ class TemporalRunner:
                     id_conflict_policy=WorkflowIDConflictPolicy.USE_EXISTING,
                 )
                 logger.info("Temporal worker polling task queue %s", self._settings.temporal_task_queue)
-                await worker.run()
+                await asyncio.gather(worker.run(), llm_worker.run())
                 return
             except asyncio.CancelledError:
                 raise

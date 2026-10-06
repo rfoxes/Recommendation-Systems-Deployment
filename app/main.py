@@ -76,11 +76,8 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
         copy_activities = CopyActivities(db, redis, generator, settings.copy_pool_size)
         temporal = TemporalRunner(
             settings,
-            activities=[
-                CacheActivities(store).refresh_campaign_cache,
-                copy_activities.find_variants_needing_copy,
-                copy_activities.generate_variant_copy,
-            ],
+            activities=[CacheActivities(store).refresh_campaign_cache, copy_activities.find_variants_needing_copy],
+            llm_activities=[copy_activities.generate_variant_copy],
         )
         temporal.start()
 

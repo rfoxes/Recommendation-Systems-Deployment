@@ -28,6 +28,7 @@ class Settings(BaseSettings):
     anthropic_api_key: SecretStr | None = None
     openai_api_key: SecretStr | None = None
     copy_pool_size: int = 3  # lines pre-generated per variant
+    llm_requests_per_minute: int = 12  # under the Gemini free tier's 15/minute; enforced by Temporal
 
     # Ad serving
     api_url: str = "http://localhost:8000"  # public base URL embedded in ads for click tracking

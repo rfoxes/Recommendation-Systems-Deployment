@@ -10,7 +10,9 @@ from typing import Protocol
 from app.config import Settings
 
 DEFAULT_MODELS = {
-    "gemini": "gemini-3.6-flash",
+    # Flash-Lite: one-line copy doesn't need more, and its free tier allows 500 requests/day and 15/minute
+    # (vs 20/day and 5/minute for Flash), measured with `gcloud beta quotas info list`.
+    "gemini": "gemini-3.5-flash-lite",
     "anthropic": "claude-opus-5-5",
     "openai": "gpt-5.4-mini",
 }

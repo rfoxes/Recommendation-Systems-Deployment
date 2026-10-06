@@ -32,7 +32,7 @@ def main() -> None:
     parser.add_argument("base_url")
     parser.add_argument("--click-key", default="dev-click-key")
     parser.add_argument("--allow-fallback", action="store_true")
-    parser.add_argument("--copy-timeout", type=float, default=240)
+    parser.add_argument("--copy-timeout", type=float, default=300)
     args = parser.parse_args()
     run = uuid.uuid4().hex[:8]
     c = httpx.Client(base_url=args.base_url.rstrip("/"), timeout=30)
