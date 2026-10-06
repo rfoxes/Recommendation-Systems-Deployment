@@ -42,14 +42,7 @@ within a few minutes; `/ready` shows progress.
 
 ## Try the API
 
-The quickest tour is one command. It runs the README flow, every GeoIP test IP, brand safety, error cases and
-clicks, then a full campaign lifecycle: create → ad set → Temporal writes LLM copy → serve → delete.
-
-```bash
-scripts/demo.sh http://localhost:8000            # add PAUSE=1 to step through it
-```
-
-Or by hand:
+The easiest way is the live demo page (`/demo`) and the API docs (`/docs`). From a terminal:
 
 Country comes from the IP, and the README's test IPs can be sent in `X-Forwarded-For`. OS comes from the
 `User-Agent`.
