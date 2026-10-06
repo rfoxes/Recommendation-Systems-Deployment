@@ -1,0 +1,11 @@
+# Files gcloud uploads for `gcloud run deploy --source .` (Cloud Build). Keep secrets and local state out.
+#!include:.gitignore
+.git
+.gitignore
+.gcloudignore
+.claude/
+.codex/
+.env*
+tests/
+docs/
+scripts/

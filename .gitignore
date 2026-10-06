@@ -2,6 +2,7 @@
 .env
 .env.*
 !.env.example
+!.env.cloud.example
 
 # Python
 __pycache__/
@@ -17,3 +18,11 @@ node_modules/
 Thumbs.db
 .idea/
 .vscode/
+
+# CTR model files (downloaded from the model repo release)
+models/
+
+# Tool caches
+.mypy_cache/
+.pytest_cache/
+.ruff_cache/
