@@ -1,6 +1,6 @@
 [project]
 name = "simula-api"
-version = "0.1.0"
+version = "2.0.0"
 description = "Native ad serving API (Simula take-home)"
 requires-python = ">=3.13,<3.14"
 dependencies = [
@@ -22,9 +22,34 @@ dependencies = [
 dev = [
     "pytest>=8",
     "httpx2>=2.13",
+    "ruff>=0.16.10",
+    "mypy>=2.4.0",
 ]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 pythonpath = ["."]
 markers = ["integration: needs local MongoDB/Redis (docker compose up -d)"]
+
+[tool.ruff]
+line-length = 120
+target-version = "py313"
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "B", "UP", "SIM", "RUF", "ASYNC"]
+# LLM writers take a per-call `timeout` and apply it with asyncio.timeout inside (live serving uses 1.5 s,
+# background generation 30 s), so the "use asyncio.timeout instead of a timeout parameter" rule doesn't fit.
+ignore = ["ASYNC109"]
+
+[tool.ruff.lint.per-file-ignores]
+"scripts/*" = ["E501"]  # long Markdown/report strings
+
+[tool.mypy]
+python_version = "3.13"
+strict = true
+plugins = ["pydantic.mypy"]
+files = ["app"]
+
+[[tool.mypy.overrides]]
+module = ["lightgbm.*", "maxminddb.*"]
+ignore_missing_imports = true

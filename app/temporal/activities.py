@@ -1,5 +1,4 @@
 import logging
-from dataclasses import dataclass
 
 from redis.asyncio import Redis
 from redis.exceptions import RedisError
@@ -12,6 +11,12 @@ from app.copywriting.generator import CopyGenerator
 from app.copywriting.writers import CopyGenerationError
 from app.db import AD_VARIANTS, Database
 from app.models import utcnow
+from app.temporal.jobs import (
+    FIND_VARIANTS_NEEDING_COPY,
+    GENERATE_VARIANT_COPY,
+    REFRESH_CAMPAIGN_CACHE,
+    VariantCopyJob,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -20,19 +25,12 @@ class CacheActivities:
     def __init__(self, store: CampaignStore) -> None:
         self._store = store
 
-    @activity.defn(name="refresh_campaign_cache")
+    @activity.defn(name=REFRESH_CAMPAIGN_CACHE)
     async def refresh_campaign_cache(self) -> int:
         """Reload every campaign from MongoDB into the Redis cache. Returns how many were cached."""
         campaigns = await self._store.refresh_cache()
         activity.logger.info("Refreshed campaign cache with %d campaigns", len(campaigns))
         return len(campaigns)
-
-
-@dataclass(frozen=True)
-class VariantCopyJob:
-    variant_id: str
-    character_name: str
-    ai_prompt: str
 
 
 class CopyActivities:
@@ -42,7 +40,7 @@ class CopyActivities:
         self._generator = generator
         self._pool_size = pool_size
 
-    @activity.defn(name="find_variants_needing_copy")
+    @activity.defn(name=FIND_VARIANTS_NEEDING_COPY)
     async def find_variants_needing_copy(self, ad_set_id: str | None) -> list[VariantCopyJob]:
         """Active variants with fewer than pool_size lines (all variants, or one ad set's)."""
         if not self._generator.enabled:
@@ -54,7 +52,7 @@ class CopyActivities:
         projection = {"_id": 0, "variant_id": 1, "character_name": 1, "ai_prompt": 1}
         return [VariantCopyJob(**doc) async for doc in self._db[AD_VARIANTS].find(query, projection)]
 
-    @activity.defn(name="generate_variant_copy")
+    @activity.defn(name=GENERATE_VARIANT_COPY)
     async def generate_variant_copy(self, job: VariantCopyJob) -> int:
         """Generate the variant's lines, save them, and tell serving instances to reload."""
         try:

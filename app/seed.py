@@ -6,9 +6,10 @@ Usage: python -m app.seed
 """
 
 import asyncio
+import json
 from pathlib import Path
 
-from pydantic import BaseModel, TypeAdapter
+from pydantic import BaseModel
 from pymongo import UpdateOne
 
 from app.config import get_settings
@@ -26,7 +27,7 @@ SEEDS: list[tuple[str, str, type[BaseModel], str]] = [
 
 
 def load_seed_file[M: BaseModel](filename: str, model: type[M]) -> list[M]:
-    return TypeAdapter(list[model]).validate_json((DATA_DIR / filename).read_bytes())
+    return [model.model_validate(item) for item in json.loads((DATA_DIR / filename).read_text())]
 
 
 async def seed(db: Database) -> dict[str, int]:

@@ -63,9 +63,7 @@ class AdSetStore:
         async def write(session: AsyncClientSession) -> Campaign:
             await self._idempotency.save(request, result.model_dump(mode="json"), session)
             await self._db[AD_SETS].insert_one(to_document(ad_set, "ad_set_id"), session=session)
-            await self._db[AD_VARIANTS].insert_many(
-                [to_document(v, "variant_id") for v in variants], session=session
-            )
+            await self._db[AD_VARIANTS].insert_many([to_document(v, "variant_id") for v in variants], session=session)
             doc = await self._db[CAMPAIGNS].find_one_and_update(
                 {"_id": ad_set.campaign_id},
                 {

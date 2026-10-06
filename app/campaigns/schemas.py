@@ -81,9 +81,5 @@ class CampaignFilters:
             and (self.surface is None or campaign.surface == self.surface)
             and (self.active is None or campaign.active == self.active)
             # A campaign with no publisher list runs on every publisher.
-            and (
-                self.publisher_id is None
-                or not campaign.publisher_ids
-                or self.publisher_id in campaign.publisher_ids
-            )
+            and (self.publisher_id is None or not campaign.publisher_ids or self.publisher_id in campaign.publisher_ids)
         )

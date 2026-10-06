@@ -7,6 +7,11 @@ from app.config import Settings
 CATALOG_VERSION_KEY = "catalog:version"
 
 
+def text(value: str | bytes) -> str:
+    """Redis values as str (the client uses decode_responses=True, so bytes never actually arrive)."""
+    return value.decode() if isinstance(value, bytes) else value
+
+
 def create_redis(settings: Settings) -> Redis:
     return Redis.from_url(settings.redis_url, decode_responses=True)
 

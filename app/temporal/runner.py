@@ -132,13 +132,17 @@ class TemporalRunner:
                     activities=self._activities,
                     graceful_shutdown_timeout=timedelta(seconds=5),
                 )
-                # LLM calls get their own task queue, rate-limited by the Temporal server across all workers:
-                # each activity makes `copy_pool_size` requests, so this caps requests/minute at the setting.
+                # LLM calls get their own task queue and worker, rate-limited so pre-generation stays under the
+                # LLM's per-minute quota (each activity makes `copy_pool_size` requests). The limit is enforced
+                # in this worker: exact, and equivalent to a global limit because Cloud Run runs at most one
+                # instance. (A server-side task-queue limit also works across many instances, but measured on
+                # Temporal Cloud it dispatched ~1 activity/minute instead of every 15 s, because the queue is
+                # split into partitions.)
                 llm_worker = Worker(
                     client,
                     task_queue=self._settings.temporal_task_queue + LLM_TASK_QUEUE_SUFFIX,
                     activities=self._llm_activities,
-                    max_task_queue_activities_per_second=(
+                    max_activities_per_second=(
                         self._settings.llm_requests_per_minute / 60 / self._settings.copy_pool_size
                     ),
                     graceful_shutdown_timeout=timedelta(seconds=5),

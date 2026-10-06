@@ -4,9 +4,9 @@ from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI, Request
-from fastapi.middleware.cors import CORSMiddleware
 from fastapi.encoders import jsonable_encoder
 from fastapi.exceptions import RequestValidationError
+from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from redis.exceptions import RedisError
 
@@ -21,11 +21,10 @@ from app.config import get_settings
 from app.copywriting.generator import CopyGenerator
 from app.copywriting.prompt import DialoguePrompt
 from app.copywriting.writers import create_copy_writer
-from app.features.store import FeatureStore
 from app.db import create_mongo_client, ensure_indexes
 from app.demo.router import router as demo_router
+from app.features.store import FeatureStore
 from app.health import router as health_router
-from app.web.router import router as web_router
 from app.idempotency import IdempotencyStore
 from app.ranking.ctr_model import CTRModel
 from app.ranking.model_files import DEFAULT_MODEL_DIR, MODEL_RELEASE, ensure_model_files
@@ -39,6 +38,7 @@ from app.sessions.router import router as sessions_router
 from app.sessions.store import SessionStore
 from app.temporal.activities import CacheActivities, CopyActivities
 from app.temporal.runner import TemporalRunner
+from app.web.router import router as web_router
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(name)s: %(message)s")
 logger = logging.getLogger(__name__)

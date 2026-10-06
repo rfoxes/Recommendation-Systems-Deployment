@@ -4,8 +4,12 @@ from datetime import timedelta
 from temporalio import workflow
 from temporalio.common import RetryPolicy
 
-with workflow.unsafe.imports_passed_through():
-    from app.temporal.activities import CacheActivities, CopyActivities
+from app.temporal.jobs import (
+    FIND_VARIANTS_NEEDING_COPY,
+    GENERATE_VARIANT_COPY,
+    REFRESH_CAMPAIGN_CACHE,
+    VariantCopyJob,
+)
 
 # LLM calls hit rate limits (especially free tiers): back off generously before giving up.
 LLM_RETRY = RetryPolicy(
@@ -24,11 +28,13 @@ class RefreshCampaignCacheWorkflow:
 
     @workflow.run
     async def run(self) -> int:
-        return await workflow.execute_activity_method(
-            CacheActivities.refresh_campaign_cache,
+        refreshed: int = await workflow.execute_activity(
+            REFRESH_CAMPAIGN_CACHE,
+            result_type=int,
             start_to_close_timeout=timedelta(seconds=60),
             retry_policy=RetryPolicy(initial_interval=timedelta(seconds=2), maximum_attempts=5),
         )
+        return refreshed
 
 
 @workflow.defn(name="GenerateAdCopy")
@@ -42,16 +48,20 @@ class GenerateAdCopyWorkflow:
 
     @workflow.run
     async def run(self, ad_set_id: str | None) -> int:
-        jobs = await workflow.execute_activity_method(
-            CopyActivities.find_variants_needing_copy, ad_set_id, start_to_close_timeout=timedelta(seconds=30)
+        jobs: list[VariantCopyJob] = await workflow.execute_activity(
+            FIND_VARIANTS_NEEDING_COPY,
+            ad_set_id,
+            result_type=list[VariantCopyJob],
+            start_to_close_timeout=timedelta(seconds=30),
         )
         generated = 0
         for start in range(0, len(jobs), COPY_CONCURRENCY):
             results = await asyncio.gather(
                 *(
-                    workflow.execute_activity_method(
-                        CopyActivities.generate_variant_copy,
+                    workflow.execute_activity(
+                        GENERATE_VARIANT_COPY,
                         job,
+                        result_type=int,
                         task_queue=workflow.info().task_queue + LLM_TASK_QUEUE_SUFFIX,
                         schedule_to_start_timeout=timedelta(hours=1),  # may queue behind the rate limit
                         start_to_close_timeout=timedelta(seconds=90),

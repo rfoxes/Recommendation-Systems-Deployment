@@ -12,7 +12,12 @@ MAX_VARIANTS_PER_AD_SET = 500
 def _dedupe[T](items: list[T]) -> list[T]:
     """Drop repeated entries (keeping order) so duplicates don't produce duplicate variants."""
     seen: set[str] = set()
-    return [x for x in items if not (str(x) in seen or seen.add(str(x)))]
+    unique = []
+    for item in items:
+        if str(item) not in seen:
+            seen.add(str(item))
+            unique.append(item)
+    return unique
 
 
 type AssetList[T] = Annotated[list[T], Field(min_length=1), AfterValidator(_dedupe)]
@@ -40,7 +45,7 @@ class AdSetCreate(BaseModel):
 
     @property
     def variant_count(self) -> int:
-        return prod(map(len, (self.character_names, self.video_urls, self.ctas, self.ai_prompts)))
+        return prod([len(self.character_names), len(self.video_urls), len(self.ctas), len(self.ai_prompts)])
 
 
 class AdSetWithVariants(AdSet):

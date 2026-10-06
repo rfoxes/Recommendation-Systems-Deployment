@@ -18,6 +18,8 @@ from dataclasses import dataclass, field
 
 from redis.asyncio import Redis
 
+from app.cache import text
+
 HOURS_KEPT = 72
 ATTRIBUTION_SECONDS = 24 * 3600
 ENTITY_TTL_SECONDS = 30 * 24 * 3600
@@ -29,8 +31,10 @@ local function count(key)
   redis.call('HINCRBY', key, 'n:' .. hour, 1)
   redis.call('HINCRBY', key, 'n_all', 1)
   for _, f in ipairs(redis.call('HKEYS', key)) do
-    local h = tonumber(string.match(f, '^[nc]:(%d+)$'))
-    if h and h < oldest then redis.call('HDEL', key, f) end
+    -- Only hourly fields (n:<hour>, c:<hour>); check the match before tonumber, which errors on nil in
+    -- some Lua engines (Upstash), unlike Redis's own.
+    local hour_field = string.match(f, '^[nc]:(%d+)$')
+    if hour_field and tonumber(hour_field) < oldest then redis.call('HDEL', key, f) end
   end
   redis.call('EXPIRE', key, ARGV[3])
 end
@@ -175,16 +179,25 @@ class FeatureStore:
                 f"fs:imp:{event.impression_id}",
             ],
             args=[
-                current_hour(now), HOURS_KEPT, ENTITY_TTL_SECONDS, now, event.campaign_id, event.variant_id,
-                event.impression_id, event.user_id, event.context_key, ATTRIBUTION_SECONDS,
+                current_hour(now),
+                HOURS_KEPT,
+                ENTITY_TTL_SECONDS,
+                now,
+                event.campaign_id,
+                event.variant_id,
+                event.impression_id,
+                event.user_id,
+                event.context_key,
+                ATTRIBUTION_SECONDS,
             ],
         )
 
     async def record_click(self, impression_id: str) -> bool | None:
         """True for the first click, False for a repeat, None if the impression is unknown or past attribution."""
-        impression = await self._redis.hgetall(f"fs:imp:{impression_id}")
-        if not impression:
+        raw = await self._redis.hgetall(f"fs:imp:{impression_id}")
+        if not raw:
             return None
+        impression = {text(k): text(v) for k, v in raw.items()}
         context = impression.get("context", "")
         recorded = await self._record_click(
             keys=[

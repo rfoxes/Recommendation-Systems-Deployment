@@ -145,7 +145,9 @@ class CTRModel:
             ids += [int(row.get(col) or 0) for col in self._fm_flags]
             for col, edges in self._fm_bins.items():
                 value = _number(row.get(col))
-                ids.append(0 if np.isnan(value) else 1 if value == 0 else int(np.searchsorted(edges, value, side="right")) + 2)
+                ids.append(
+                    0 if np.isnan(value) else 1 if value == 0 else int(np.searchsorted(edges, value, side="right")) + 2
+                )
             idx.append(ids)
             dense.append([_number(row.get(col)) for col in self._fm_dense])
         rates = (logit(np.asarray(dense, dtype="float64")) - self._fm_mean) / self._fm_std

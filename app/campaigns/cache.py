@@ -12,7 +12,7 @@ import secrets
 
 from redis.asyncio import Redis
 
-from app.cache import CATALOG_VERSION_KEY
+from app.cache import CATALOG_VERSION_KEY, text
 from app.models import Campaign, utcnow
 
 CAMPAIGNS_KEY = "campaigns"
@@ -105,7 +105,7 @@ class CampaignCache:
         )
 
     async def catalog_version(self) -> str:
-        return await self._redis.get(CATALOG_VERSION_KEY) or "0"
+        return text(await self._redis.get(CATALOG_VERSION_KEY) or "0")
 
     async def replace_all(self, campaigns: list[Campaign], expected_version: str) -> bool:
         """Atomically replace the whole cache, unless catalog_version moved past expected_version."""
@@ -128,5 +128,5 @@ class CampaignCache:
         return bool(swapped)
 
     async def last_refresh(self) -> str | None:
-        value: str | None = await self._redis.get(LAST_REFRESH_KEY)
-        return value
+        value = await self._redis.get(LAST_REFRESH_KEY)
+        return text(value) if value else None

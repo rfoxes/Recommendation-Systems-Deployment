@@ -55,7 +55,7 @@ class ServeWriter:
             logger.error("Serve queue full; dropping a record")
 
     def _drain(self) -> list[_Op]:
-        ops = []
+        ops: list[_Op] = []
         while not self._queue.empty() and len(ops) < self._batch_size:
             ops.append(self._queue.get_nowait())
         return ops

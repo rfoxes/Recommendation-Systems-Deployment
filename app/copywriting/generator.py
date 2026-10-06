@@ -29,7 +29,9 @@ class CopyGenerator:
     async def line(self, character_name: str, ai_prompt: str, *, timeout: float) -> str:
         if self._writer is None:
             raise CopyGenerationError("no LLM API key configured", retryable=False)
-        raw = await self._writer.write(self._prompt.system, self._prompt.render(character_name, ai_prompt), timeout=timeout)
+        raw = await self._writer.write(
+            self._prompt.system, self._prompt.render(character_name, ai_prompt), timeout=timeout
+        )
         return clean_line(raw)
 
     async def lines(self, character_name: str, ai_prompt: str, count: int, *, timeout: float) -> list[str]:

@@ -40,9 +40,11 @@ def ensure_model_files(directory: Path = DEFAULT_MODEL_DIR) -> Path:
         if path.exists() and _sha256(path) == expected:
             continue
         logger.info("Downloading %s from %s %s", name, MODEL_REPO, MODEL_RELEASE)
-        with tempfile.NamedTemporaryFile(dir=directory, delete=False) as tmp:
-            with urllib.request.urlopen(f"{RELEASE_URL}/{name}", timeout=60) as response:  # noqa: S310 (pinned https URL)
-                tmp.write(response.read())
+        with (
+            tempfile.NamedTemporaryFile(dir=directory, delete=False) as tmp,
+            urllib.request.urlopen(f"{RELEASE_URL}/{name}", timeout=60) as response,  # pinned https URL
+        ):
+            tmp.write(response.read())
         downloaded = Path(tmp.name)
         if _sha256(downloaded) != expected:
             downloaded.unlink()

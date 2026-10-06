@@ -146,7 +146,12 @@ class AdServer:
 
         # Fatigue: a variant shown to this user `fatigue_cap` times in 24h is out; so is a campaign with none left.
         variants = {
-            cid: [(s.ad_set, v) for s in item.ad_sets for v in s.variants if seen[v.variant_id] < self._settings.fatigue_cap]
+            cid: [
+                (s.ad_set, v)
+                for s in item.ad_sets
+                for v in s.variants
+                if seen[v.variant_id] < self._settings.fatigue_cap
+            ]
             for cid, item in by_id.items()
         }
         open_ids = [cid for cid in by_id if variants[cid]]
@@ -156,7 +161,9 @@ class AdServer:
         decision, scored = self._rank(open_ids, rows, list(by_id), snapshot, seen_campaigns)
         chosen = by_id[decision.campaign_id]
         ad_set, variant = self._rng.choice(variants[decision.campaign_id])  # README step 5: random ad set + variant
-        message, copy_source = await self._message(variant.copy_pool, variant.character_name, variant.ai_prompt, ad_set.fallback_copy)
+        message, copy_source = await self._message(
+            variant.copy_pool, variant.character_name, variant.ai_prompt, ad_set.fallback_copy
+        )
 
         impression_id = new_id("imp")
         campaign = chosen.campaign
@@ -196,7 +203,9 @@ class AdServer:
             copy_source=copy_source,
             latency_ms=round(1000 * (time.perf_counter() - started), 2),
         )
-        event = ServeEvent(impression_id, session.user_id, campaign.campaign_id, variant.variant_id, request.context_key)
+        event = ServeEvent(
+            impression_id, session.user_id, campaign.campaign_id, variant.variant_id, request.context_key
+        )
         return ServeResult(LoadNativeResponse(impression_id=impression_id, rendered_html=html), serve, event, session)
 
     async def after_response(self, result: ServeResult) -> None:
@@ -248,9 +257,7 @@ class AdServer:
         }
         return decision, scored
 
-    async def _message(
-        self, pool: list[str], character: str, ai_prompt: str, fallback: list[str]
-    ) -> tuple[str, str]:
+    async def _message(self, pool: list[str], character: str, ai_prompt: str, fallback: list[str]) -> tuple[str, str]:
         """README step 6: the LLM's line (pre-generated if possible), else the ad set's fallback copy."""
         if pool:
             return self._rng.choice(pool), "pool"
@@ -261,4 +268,3 @@ class AdServer:
             except Exception:
                 logger.warning("Live copy generation failed; using fallback copy", exc_info=True)
         return self._rng.choice(fallback), "fallback"
-

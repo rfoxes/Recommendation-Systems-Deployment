@@ -39,9 +39,7 @@ class ServableCampaign:
 
 
 class ActiveCatalog:
-    def __init__(
-        self, db: Database, store: CampaignStore, cache: CampaignCache, check_interval: float = 1.0
-    ) -> None:
+    def __init__(self, db: Database, store: CampaignStore, cache: CampaignCache, check_interval: float = 1.0) -> None:
         self._db = db
         self._store = store
         self._cache = cache
@@ -84,9 +82,7 @@ class ActiveCatalog:
             async for doc in self._db[AD_SETS].find({"_id": {"$in": wanted_ad_set_ids}, "active": True}, {"_id": 0})
         }
         variants: defaultdict[str, list[AdVariant]] = defaultdict(list)
-        async for doc in self._db[AD_VARIANTS].find(
-            {"ad_set_id": {"$in": list(ad_sets)}, "active": True}, {"_id": 0}
-        ):
+        async for doc in self._db[AD_VARIANTS].find({"ad_set_id": {"$in": list(ad_sets)}, "active": True}, {"_id": 0}):
             variant = AdVariant.model_validate(doc)
             variants[variant.ad_set_id].append(variant)
 

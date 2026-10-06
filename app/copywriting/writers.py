@@ -72,7 +72,9 @@ class GeminiWriter:
             config.thinking_config = types.ThinkingConfig(thinking_level=types.ThinkingLevel.LOW)
         try:
             async with asyncio.timeout(timeout):
-                response = await self._client.aio.models.generate_content(model=self.model, contents=user, config=config)
+                response = await self._client.aio.models.generate_content(
+                    model=self.model, contents=user, config=config
+                )
         except errors.APIError as exc:
             raise CopyGenerationError(f"gemini: {exc}", retryable=_retryable(exc.code)) from exc
         except TimeoutError as exc:
@@ -94,23 +96,26 @@ class AnthropicWriter:
     async def write(self, system: str, user: str, *, timeout: float) -> str:
         import anthropic
 
-        options: dict[str, object] = {}
-        if self.model in self._CURRENT_MODELS:
-            # Low effort suits a one-line answer; on a safety decline the API retries on a fallback model.
-            options = {
-                "output_config": {"effort": "low"},
-                "betas": ["server-side-fallback-2026-07-01"],
-                "fallbacks": "default",
-            }
         try:
             async with asyncio.timeout(timeout):
-                response = await self._client.beta.messages.create(
-                    model=self.model,
-                    max_tokens=4096,
-                    system=system,
-                    messages=[{"role": "user", "content": user}],
-                    **options,  # type: ignore[arg-type]
-                )
+                if self.model in self._CURRENT_MODELS:
+                    # Low effort suits a one-line answer; on a safety decline the API retries on a fallback model.
+                    response = await self._client.beta.messages.create(
+                        model=self.model,
+                        max_tokens=4096,
+                        system=system,
+                        messages=[{"role": "user", "content": user}],
+                        output_config={"effort": "low"},
+                        betas=["server-side-fallback-2026-07-01"],
+                        fallbacks="default",
+                    )
+                else:
+                    response = await self._client.beta.messages.create(
+                        model=self.model,
+                        max_tokens=4096,
+                        system=system,
+                        messages=[{"role": "user", "content": user}],
+                    )
         except anthropic.APIStatusError as exc:
             raise CopyGenerationError(f"anthropic: {exc.message}", retryable=_retryable(exc.status_code)) from exc
         except (anthropic.APIConnectionError, TimeoutError) as exc:
@@ -132,19 +137,26 @@ class OpenAIWriter:
     async def write(self, system: str, user: str, *, timeout: float) -> str:
         import openai
 
-        options: dict[str, object] = {}
-        if self.model.startswith(("gpt-5", "o")):  # reasoning models: keep reasoning minimal for one line
-            options["reasoning"] = {"effort": "low"}
         try:
             async with asyncio.timeout(timeout):
-                response = await self._client.responses.create(
-                    model=self.model, instructions=system, input=user, max_output_tokens=1024, **options  # type: ignore[arg-type]
-                )
+                if self.model.startswith(("gpt-5", "o")):  # reasoning models: keep reasoning minimal for one line
+                    response = await self._client.responses.create(
+                        model=self.model,
+                        instructions=system,
+                        input=user,
+                        max_output_tokens=1024,
+                        reasoning={"effort": "low"},
+                    )
+                else:
+                    response = await self._client.responses.create(
+                        model=self.model, instructions=system, input=user, max_output_tokens=1024
+                    )
         except openai.APIStatusError as exc:
             raise CopyGenerationError(f"openai: {exc.message}", retryable=_retryable(exc.status_code)) from exc
         except (openai.APIConnectionError, TimeoutError) as exc:
             raise CopyGenerationError(f"openai: {exc}", retryable=True) from exc
-        return response.output_text
+        text: str = response.output_text
+        return text
 
 
 def create_copy_writer(settings: Settings) -> CopyWriter | None:

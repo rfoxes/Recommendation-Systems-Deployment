@@ -46,7 +46,11 @@ async def ready(
     temporal = state.temporal
     copy = state.copy_generator
     variants = await db[AD_VARIANTS].count_documents({"active": True}) if mongo == "ok" else None
-    with_copy = await db[AD_VARIANTS].count_documents({"active": True, "copy_pool.0": {"$exists": True}}) if mongo == "ok" else None
+    with_copy = (
+        await db[AD_VARIANTS].count_documents({"active": True, "copy_pool.0": {"$exists": True}})
+        if mongo == "ok"
+        else None
+    )
     if mongo != "ok" or redis != "ok":
         response.status_code = status.HTTP_503_SERVICE_UNAVAILABLE
     return {
@@ -54,7 +58,9 @@ async def ready(
         "redis": redis,
         "temporal": "disabled" if temporal is None else ("connected" if temporal.connected else "connecting"),
         "ctr_model": {"source": f"{MODEL_REPO}@{MODEL_RELEASE}", "golden_sample_max_diff": state.ctr_model_drift},
-        "llm": {"provider": copy.provider, "model": copy.model} if copy.enabled else "not configured: ads use fallback copy",
+        "llm": {"provider": copy.provider, "model": copy.model}
+        if copy.enabled
+        else "not configured: ads use fallback copy",
         "ad_copy": {"active_variants": variants, "with_pregenerated_lines": with_copy},
         "campaign_cache_last_refresh": await cache.last_refresh() if redis == "ok" else None,
     }

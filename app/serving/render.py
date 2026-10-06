@@ -14,8 +14,20 @@ from pathlib import Path
 DEFAULT_TEMPLATE = Path(__file__).resolve().parents[2] / "template" / "character_ad.html"
 
 PLACEHOLDERS = frozenset(
-    {"CHAR_NAME", "CAMPAIGN", "CHAR_MESSAGE", "CTA", "MEDIA_URL", "TRACKING_URL", "IMPRESSION_URL", "AD_ID",
-     "API_URL", "API_KEY", "THEME", "DOWNLOADS"}
+    {
+        "CHAR_NAME",
+        "CAMPAIGN",
+        "CHAR_MESSAGE",
+        "CTA",
+        "MEDIA_URL",
+        "TRACKING_URL",
+        "IMPRESSION_URL",
+        "AD_ID",
+        "API_URL",
+        "API_KEY",
+        "THEME",
+        "DOWNLOADS",
+    }
 )
 _SECTION = re.compile(r"\{\{([#^])(\w+)\}\}(.*?)\{\{/\2\}\}", re.DOTALL)
 _PLACEHOLDER = re.compile(r"\{\{\s*(\w+)\s*\}\}")

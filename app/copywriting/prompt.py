@@ -22,7 +22,10 @@ class DialoguePrompt:
     @classmethod
     def load(cls, path: Path = PROMPT_FILE) -> "DialoguePrompt":
         markdown = path.read_text()
-        return cls(system=_code_block_under(markdown, "System prompt"), user_template=_code_block_under(markdown, "User prompt"))
+        return cls(
+            system=_code_block_under(markdown, "System prompt"),
+            user_template=_code_block_under(markdown, "User prompt"),
+        )
 
     def render(self, character_name: str, ai_prompt: str) -> str:
         return self.user_template.replace("{{CHAR_NAME}}", character_name).replace("{{ai_prompt}}", ai_prompt)

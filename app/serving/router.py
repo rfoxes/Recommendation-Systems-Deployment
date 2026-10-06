@@ -36,8 +36,10 @@ async def _record(server: AdServer, writer: ServeWriter, result: ServeResult) ->
 @router.post(
     "/load/native",
     response_model=LoadNativeResponse,
-    responses={204: {"description": "No eligible campaign for this user and slot (no fill)"},
-               404: {"description": "Unknown session"}},
+    responses={
+        204: {"description": "No eligible campaign for this user and slot (no fill)"},
+        404: {"description": "Unknown session"},
+    },
 )
 async def load_native(
     body: LoadNativeRequest,
@@ -57,8 +59,11 @@ async def load_native(
     return result.response
 
 
-@router.post("/impressions/{impression_id}/click", status_code=status.HTTP_204_NO_CONTENT,
-             responses={401: {"description": "Missing or wrong API key"}, 404: {"description": "Unknown impression"}})
+@router.post(
+    "/impressions/{impression_id}/click",
+    status_code=status.HTTP_204_NO_CONTENT,
+    responses={401: {"description": "Missing or wrong API key"}, 404: {"description": "Unknown impression"}},
+)
 async def record_click(
     impression_id: str,
     features: Annotated[FeatureStore, Depends(get_feature_store)],
