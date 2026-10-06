@@ -113,3 +113,19 @@ def test_clicks(client: TestClient, mongo) -> None:
     assert serve_doc is not None and serve_doc["clicked_at"] is not None
     assert serve_doc["copy_source"] == "fallback" and serve_doc["ranking_reason"]  # no LLM key in tests
     assert serve_doc["features"] and serve_doc["candidates"]
+
+
+@pytest.fixture
+def serve_limit_of_three(monkeypatch: pytest.MonkeyPatch) -> Iterator[None]:
+    monkeypatch.setenv("SERVE_LIMIT_PER_MINUTE", "3")
+    yield
+
+
+def test_ad_requests_are_rate_limited_per_ip(serve_limit_of_three: None, client: TestClient) -> None:
+    statuses = [serve(client, "214.78.0.1", IPHONE, f"limited_{i}").status_code for i in range(4)]
+    assert statuses == [200, 200, 200, 429]
+    limited = serve(client, "214.78.0.1", IPHONE, "limited_again")
+    assert limited.status_code == 429 and int(limited.headers["Retry-After"]) > 0
+    assert (
+        serve(client, "2.125.160.217", ANDROID, "other_ip").status_code == 204
+    )  # other IPs unaffected (no fill in GB)

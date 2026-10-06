@@ -86,12 +86,12 @@ curl -s -X POST localhost:8000/adsets -H 'Content-Type: application/json' \
 | 204 | No eligible campaign (geo, OS, store link or brand safety) |
 | 404 | Unknown session or campaign |
 | 422 | Invalid request |
-| 429 | Too many sessions from one IP (30 a minute) |
+| 429 | Too many requests from one IP: 30 session creates or 120 ad requests a minute, with `Retry-After` |
 
 ## Tests
 
 ```bash
-uv run pytest                                                 # 123 tests; needs `docker compose up`
+uv run pytest                                                 # 124 tests; needs `docker compose up`
 uv run ruff check . && uv run ruff format --check . && uv run mypy   # lint, format, strict typing
 uv run python scripts/smoke_test.py http://localhost:8000     # end to end; add --allow-fallback without an LLM key
 uv run python scripts/sample_output.py http://localhost:8000  # writes samples/
@@ -139,6 +139,7 @@ Everything comes from environment variables or `.env`; see [.env.example](.env.e
 | `GEMINI_API_KEY`, `ANTHROPIC_API_KEY`, `OPENAI_API_KEY` | unset | Only the chosen provider's key is needed |
 | `LLM_MODEL` | provider default | `gemini-3.5-flash-lite`, `claude-opus-5-5`, `gpt-5.4-mini` |
 | `API_URL`, `CLICK_API_KEY` | `http://localhost:8000`, `dev-click-key` | Embedded in each ad for click tracking |
+| `SESSION_CREATE_LIMIT`, `SERVE_LIMIT_PER_MINUTE` | `30`, `120` | Per-IP limits per minute |
 
 ## Deploy (Google Cloud Run, free tier)
 

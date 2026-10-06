@@ -48,6 +48,7 @@ class Settings(BaseSettings):
     session_record_ttl_seconds: int = 24 * 3600  # how long a session id still resolves to its user
     session_create_limit: int = 30  # max POST /session/create per IP per window
     session_create_window_seconds: int = 60
+    serve_limit_per_minute: int = 120  # max POST /load/native per IP per minute (protects the free tiers)
 
 
 @lru_cache

@@ -6,9 +6,11 @@ from fastapi import APIRouter, BackgroundTasks, Depends, Header, HTTPException, 
 from app.config import get_settings
 from app.features.store import FeatureStore
 from app.models import utcnow
+from app.ratelimit import RateLimiter
 from app.request_context import client_ip
 from app.serving.serve_writer import ServeWriter
 from app.serving.service import AdServer, LoadNativeRequest, LoadNativeResponse, ServeResult, UnknownSessionError
+from app.sessions.router import get_rate_limiter
 
 router = APIRouter(tags=["serving"])
 
@@ -39,6 +41,7 @@ async def _record(server: AdServer, writer: ServeWriter, result: ServeResult) ->
     responses={
         204: {"description": "No eligible campaign for this user and slot (no fill)"},
         404: {"description": "Unknown session"},
+        429: {"description": "Too many ad requests from this IP"},
     },
 )
 async def load_native(
@@ -47,10 +50,20 @@ async def load_native(
     background: BackgroundTasks,
     server: Annotated[AdServer, Depends(get_ad_server)],
     writer: Annotated[ServeWriter, Depends(get_serve_writer)],
+    limiter: Annotated[RateLimiter, Depends(get_rate_limiter)],
 ) -> Any:
     """Serve a native sponsored-character ad for a feed slot."""
+    ip = client_ip(request)
+    # Per-IP cap: a public endpoint shouldn't let one client keep the instance awake past the free tiers.
+    limit = await limiter.hit("load_native", ip or "unknown", limit=get_settings().serve_limit_per_minute, window=60)
+    if not limit.allowed:
+        raise HTTPException(
+            status.HTTP_429_TOO_MANY_REQUESTS,
+            detail="too many ad requests from this IP; slow down",
+            headers={"Retry-After": str(limit.retry_after)},
+        )
     try:
-        result = await server.serve(body, client_ip(request), request.headers.get("user-agent"))
+        result = await server.serve(body, ip, request.headers.get("user-agent"))
     except UnknownSessionError as exc:
         raise HTTPException(status.HTTP_404_NOT_FOUND, detail=f"session {exc} not found") from exc
     if result is None:
