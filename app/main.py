@@ -25,6 +25,7 @@ from app.features.store import FeatureStore
 from app.db import create_mongo_client, ensure_indexes
 from app.demo.router import router as demo_router
 from app.health import router as health_router
+from app.web.router import router as web_router
 from app.idempotency import IdempotencyStore
 from app.ranking.ctr_model import CTRModel
 from app.ranking.model_files import DEFAULT_MODEL_DIR, MODEL_RELEASE, ensure_model_files
@@ -140,6 +141,7 @@ app.include_router(sessions_router)
 app.include_router(serving_router)
 app.include_router(health_router)
 app.include_router(demo_router)
+app.include_router(web_router)
 
 
 def _json_safe(value: object) -> object:
