@@ -68,7 +68,9 @@
       row("MongoDB", d.mongo, d.mongo === "ok" ? "ok" : "bad") +
       row("Redis", d.redis, d.redis === "ok" ? "ok" : "bad") +
       row("Temporal", d.temporal, d.temporal === "connected" ? "ok" : "warn") +
-      row("CTR model", d.ctr_model.source + " · verified to " + Number(d.ctr_model.golden_sample_max_diff).toExponential(1), "ok") +
+      (d.ctr_model.status
+        ? row("CTR model", "unavailable: ads still serve, picking a random eligible campaign", "bad")
+        : row("CTR model", d.ctr_model.source + " · verified to " + Number(d.ctr_model.golden_sample_max_diff).toExponential(1), "ok")) +
       row("LLM", llm[0], llm[1]) +
       row("Ad copy ready", copy.with_pregenerated_lines + " of " + copy.active_variants + " active variants",
           copy.with_pregenerated_lines === copy.active_variants ? "ok" : "warn") +

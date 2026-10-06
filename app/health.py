@@ -57,7 +57,13 @@ async def ready(
         "mongo": mongo,
         "redis": redis,
         "temporal": "disabled" if temporal is None else ("connected" if temporal.connected else "connecting"),
-        "ctr_model": {"source": f"{MODEL_REPO}@{MODEL_RELEASE}", "golden_sample_max_diff": state.ctr_model_drift},
+        "ctr_model": {"source": f"{MODEL_REPO}@{MODEL_RELEASE}", "golden_sample_max_diff": state.ctr_model_drift}
+        if state.ctr_model_error is None
+        else {
+            "source": f"{MODEL_REPO}@{MODEL_RELEASE}",
+            "status": "unavailable: ads still serve, picking a random eligible campaign",
+            "error": state.ctr_model_error,
+        },
         "llm": {"provider": copy.provider, "model": copy.model}
         if copy.enabled
         else "not configured: ads use fallback copy",

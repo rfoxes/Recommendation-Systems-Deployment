@@ -5,6 +5,7 @@ from collections.abc import Iterator
 import pytest
 from fastapi.testclient import TestClient
 
+from app.ranking.ctr_model import CTRModel
 from tests.test_geo import README_TEST_IPS
 
 pytestmark = pytest.mark.integration
@@ -93,6 +94,27 @@ def test_clicks(client: TestClient, mongo) -> None:
     assert serve_doc is not None and serve_doc["clicked_at"] is not None
     assert serve_doc["copy_source"] == "fallback" and serve_doc["ranking_reason"]  # no LLM key in tests
     assert serve_doc["features"] and serve_doc["candidates"]
+
+
+@pytest.fixture
+def model_fails_its_check(monkeypatch: pytest.MonkeyPatch) -> Iterator[None]:
+    def fail(self: CTRModel) -> float:
+        raise ValueError("CTR model disagrees with the trained V1")
+
+    monkeypatch.setattr(CTRModel, "verify_golden_sample", fail)
+    yield
+
+
+def test_ads_keep_serving_when_the_model_fails_its_check(
+    model_fails_its_check: None, client: TestClient, mongo
+) -> None:
+    ready = client.get("/ready?format=json").json()
+    assert ready["ctr_model"]["status"].startswith("unavailable") and "disagrees" in ready["ctr_model"]["error"]
+    response = serve(client, "214.78.0.1", IPHONE)
+    assert response.status_code == 200
+    time.sleep(0.6)  # serve records are written in batches
+    serve_doc = mongo["serves"].find_one({"_id": response.json()["impression_id"]})
+    assert serve_doc is not None and serve_doc["ranking_reason"] == "model_unavailable"
 
 
 @pytest.fixture

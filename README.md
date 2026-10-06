@@ -93,7 +93,7 @@ curl -s -X POST localhost:8000/adsets -H 'Content-Type: application/json' \
 ## Tests
 
 ```bash
-uv run pytest                                                 # 123 tests; needs `docker compose up`
+uv run pytest                                                 # 124 tests; needs `docker compose up`
 uv run ruff check . && uv run ruff format --check . && uv run mypy   # lint, format, strict typing
 uv run python scripts/smoke_test.py http://localhost:8000     # end to end; add --allow-fallback without an LLM key
 uv run python scripts/sample_output.py http://localhost:8000  # writes samples/
@@ -123,7 +123,7 @@ uv run python scripts/sample_output.py http://localhost:8000  # writes samples/
 | Ad set routes | Variants are the cartesian product of the asset lists, de-duplicated and capped at 500. The ad set, its variants and the campaign link commit in one transaction. `Idempotency-Key` makes retries safe. |
 | Sessions | The user comes from `ppid`, otherwise the IP. Get-or-create is one atomic Redis step. Sessions expire after 30 s without an ad serve, using Redis key expiry. Each IP is rate-limited. |
 | Ad serving | Session, then GeoIP country and user-agent OS, then eligibility (geo, OS, store link), then features, the CTR model and the ranker, then a random ad set and variant, LLM copy and the rendered template. The serve record is written in a batch after the response. |
-| CTR model + ranker | V1 (LightGBM + factorization machine) from [rfoxes/Recommendation-Systems](https://github.com/rfoxes/Recommendation-Systems), downloaded from a pinned release and checked against a golden sample at startup. Scoring uses numpy and LightGBM, no PyTorch. Its exploration-aware ranker is adapted to one request at a time. |
+| CTR model + ranker | V1 (LightGBM + factorization machine) from [rfoxes/Recommendation-Systems](https://github.com/rfoxes/Recommendation-Systems), downloaded from a pinned release and checked against a golden sample at startup. If it can't load or doesn't match, ads still serve with a random eligible campaign, and `/ready` says so. Scoring uses numpy and LightGBM, no PyTorch. Its exploration-aware ranker is adapted to one request at a time. |
 | LLM copy | Generated per variant by a Temporal workflow, on a rate-limited task queue. `LLM_PROVIDER` picks Gemini, Claude or OpenAI. A live call with a short timeout covers variants without lines yet, then the fallback copy. |
 | Clicks | `POST /impressions/{id}/click`, called by the ad's CTA, authorized with a click-only key and counted once per impression. |
 

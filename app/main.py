@@ -47,11 +47,18 @@ logger = logging.getLogger(__name__)
 @asynccontextmanager
 async def lifespan(app: FastAPI) -> AsyncIterator[None]:
     settings = get_settings()
-    # The CTR model must score exactly like the trained V1, or the app refuses to start.
-    ctr_model = CTRModel(ensure_model_files(settings.ctr_model_dir or DEFAULT_MODEL_DIR))
-    drift = ctr_model.verify_golden_sample()
-    app.state.ctr_model_drift = drift
-    logger.info("CTR model %s loaded (golden sample max diff %.1e)", MODEL_RELEASE, drift)
+    # The CTR model must score exactly like the trained V1. If it can't load or doesn't match, ads keep serving:
+    # ranking falls back to a random eligible campaign, and /ready reports why.
+    ctr_model: CTRModel | None = None
+    app.state.ctr_model_drift = app.state.ctr_model_error = None
+    try:
+        loaded = CTRModel(ensure_model_files(settings.ctr_model_dir or DEFAULT_MODEL_DIR))
+        app.state.ctr_model_drift = loaded.verify_golden_sample()
+        ctr_model = loaded
+        logger.info("CTR model %s loaded (golden sample max diff %.1e)", MODEL_RELEASE, app.state.ctr_model_drift)
+    except Exception as exc:
+        app.state.ctr_model_error = f"{type(exc).__name__}: {exc}"
+        logger.exception("CTR model unavailable; ranking falls back to a random eligible campaign")
 
     mongo = create_mongo_client(settings)
     redis = create_redis(settings)

@@ -44,8 +44,10 @@
       row(d.redis === "ok" ? "ok" : "bad", "Redis", d.redis === "ok" ? "Connected" : d.redis),
       row(d.temporal === "connected" ? "ok" : d.temporal === "disabled" ? "warn" : "warn", "Temporal",
           d.temporal === "connected" ? "Worker connected: hourly cache refresh and copy generation run here" : d.temporal),
-      row("ok", "CTR model", d.ctr_model.source + " · matches the trained model to " +
-          Number(d.ctr_model.golden_sample_max_diff).toExponential(1)),
+      d.ctr_model.status
+        ? row("bad", "CTR model", "Unavailable: ads still serve, picking a random eligible campaign (details in ?format=json)")
+        : row("ok", "CTR model", d.ctr_model.source + " · matches the trained model to " +
+            Number(d.ctr_model.golden_sample_max_diff).toExponential(1)),
       row(llmOk ? "ok" : "warn", "LLM", llmOk ? d.llm.provider + " · " + d.llm.model : d.llm),
       row(done === total && total > 0 ? "ok" : "warn", "Ad copy",
           done + " of " + total + " active variants have pre-generated lines" +

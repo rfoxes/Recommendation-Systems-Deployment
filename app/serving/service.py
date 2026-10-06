@@ -95,7 +95,7 @@ class AdServer:
         sessions: SessionStore,
         catalog: ActiveCatalog,
         features: FeatureStore,
-        model: CTRModel,
+        model: CTRModel | None,
         copy: CopyGenerator,
         template: AdTemplate,
         geoip: GeoIP,
@@ -105,13 +105,13 @@ class AdServer:
         self._sessions = sessions
         self._catalog = catalog
         self._features = features
-        self._model = model
+        self._model = model  # None if it couldn't load or didn't match training: ranking is then random
         self._copy = copy
         self._template = template
         self._geoip = geoip
         self._rng = rng or random.Random()
-        self._known_genres = set(model.known_values("genre"))
-        self._training_ctr = float(model.manifest["training"]["click_rate"])
+        self._known_genres = set(model.known_values("genre")) if model else set()
+        self._training_ctr = float(model.manifest["training"]["click_rate"]) if model else 0.0
 
     async def serve(self, body: LoadNativeRequest, ip: str | None, user_agent: str | None) -> ServeResult | None:
         """The ad for this slot, or None when no campaign is eligible (no fill)."""
@@ -136,7 +136,7 @@ class AdServer:
 
         by_id = {c.campaign.campaign_id: c for c in candidates}
         snapshot = await self._features.snapshot(session.user_id, list(by_id), request.context_key)
-        rows = model_rows(snapshot, list(by_id), request, fallback_prior=self._training_ctr)
+        rows = model_rows(snapshot, list(by_id), request, fallback_prior=self._training_ctr) if self._model else []
         seen_campaigns = {e.campaign_id for e in snapshot.seen_24h}
 
         decision, scored = self._rank(list(by_id), rows, snapshot, seen_campaigns)
@@ -165,7 +165,7 @@ class AdServer:
                 "DOWNLOADS": campaign.downloads_label or "",
             }
         )
-        chosen_row = rows[list(by_id).index(decision.campaign_id)]
+        chosen_row = rows[list(by_id).index(decision.campaign_id)] if rows else {}
         serve = Serve(
             impression_id=impression_id,
             session_id=session.session_id,
@@ -205,6 +205,8 @@ class AdServer:
         snapshot: Any,
         seen_campaigns: set[str],
     ) -> tuple[Decision, dict[str, dict[str, float]]]:
+        if self._model is None:  # it didn't load or didn't match training (see /ready): keep serving ads
+            return Decision(self._rng.choice(campaign_ids), "model_unavailable", []), {}
         try:
             prediction = self._model.predict(rows)
         except Exception:  # never fail an ad request because of the model
