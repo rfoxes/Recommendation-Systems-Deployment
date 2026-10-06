@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Readiness</title>
+  <style>
+    :root { --bg: #111; --card: #1b1b1b; --line: rgba(255,255,255,0.12); --text: #f2f2f2; --muted: rgba(255,255,255,0.6);
+            --ok: #4ade80; --warn: #facc15; --bad: #f87171; }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { background: var(--bg); color: var(--text); font: 15px/1.55 -apple-system, system-ui, sans-serif; padding: 40px 16px; }
+    main { max-width: 640px; margin: 0 auto; }
+    h1 { font-size: 22px; margin-bottom: 4px; }
+    .sub { color: var(--muted); font-size: 13px; margin-bottom: 20px; }
+    .sub a { color: var(--muted); }
+    .row { display: flex; align-items: flex-start; gap: 12px; padding: 14px 16px; background: var(--card);
+           border: 1px solid var(--line); border-radius: 10px; margin-bottom: 8px; }
+    .dot { width: 10px; height: 10px; border-radius: 50%; margin-top: 7px; flex: none; }
+    .ok .dot { background: var(--ok); } .warn .dot { background: var(--warn); } .bad .dot { background: var(--bad); }
+    .name { font-weight: 600; }
+    .detail { color: var(--muted); font-size: 13px; }
+    .bar { height: 6px; background: rgba(255,255,255,0.1); border-radius: 3px; margin-top: 8px; overflow: hidden; }
+    .bar div { height: 100%; background: var(--ok); }
+    .overall { font-size: 15px; margin-bottom: 16px; font-weight: 600; }
+  </style>
+</head>
+<body>
+<main>
+  <h1>Readiness</h1>
+  <p class="sub">Refreshes every 5 seconds · <a href="?format=json">raw JSON</a> · <a href="./">home</a></p>
+  <p class="overall" id="overall">Checking…</p>
+  <div id="rows"></div>
+</main>
+<script>
+  function row(state, name, detail, extra) {
+    return '<div class="row ' + state + '"><div class="dot"></div><div style="flex:1"><div class="name">' + name +
+           '</div><div class="detail">' + detail + '</div>' + (extra || "") + '</div></div>';
+  }
+  function render(d) {
+    var copy = d.ad_copy || {}, total = copy.active_variants || 0, done = copy.with_pregenerated_lines || 0;
+    var llmOk = typeof d.llm !== "string";
+    var rows = [
+      row(d.mongo === "ok" ? "ok" : "bad", "MongoDB", d.mongo === "ok" ? "Connected" : d.mongo),
+      row(d.redis === "ok" ? "ok" : "bad", "Redis", d.redis === "ok" ? "Connected" : d.redis),
+      row(d.temporal === "connected" ? "ok" : d.temporal === "disabled" ? "warn" : "warn", "Temporal",
+          d.temporal === "connected" ? "Worker connected: hourly cache refresh and copy generation run here" : d.temporal),
+      row("ok", "CTR model", d.ctr_model.source + " · matches the trained model to " +
+          Number(d.ctr_model.golden_sample_max_diff).toExponential(1)),
+      row(llmOk ? "ok" : "warn", "LLM", llmOk ? d.llm.provider + " · " + d.llm.model : d.llm),
+      row(done === total && total > 0 ? "ok" : "warn", "Ad copy",
+          done + " of " + total + " active variants have pre-generated lines" +
+          (done < total ? " (fills in over a few minutes; rate-limited)" : ""),
+          '<div class="bar"><div style="width:' + (total ? 100 * done / total : 0) + '%"></div></div>'),
+      row(d.campaign_cache_last_refresh ? "ok" : "warn", "Campaign cache",
+          d.campaign_cache_last_refresh ? "Last full refresh " + new Date(d.campaign_cache_last_refresh).toLocaleString() : "Not refreshed yet")
+    ];
+    document.getElementById("rows").innerHTML = rows.join("");
+    var core = d.mongo === "ok" && d.redis === "ok";
+    var all = core && d.temporal === "connected" && llmOk && done === total;
+    var el = document.getElementById("overall");
+    el.textContent = all ? "✅ Everything is ready" : core ? "⚠️ Serving works; some features are still starting or not configured" : "❌ Not ready: the database or cache is down";
+  }
+  function load() {
+    fetch("ready?format=json").then(function (r) { return r.json(); }).then(render)
+      .catch(function () { document.getElementById("overall").textContent = "❌ Can't reach the API"; });
+  }
+  load(); setInterval(load, 5000);
+</script>
+</body>
+</html>

@@ -2,18 +2,23 @@
 
 Unlike /health (is the process up), this checks MongoDB, Redis and Temporal, and reports the CTR model,
 the LLM provider and how much ad copy has been pre-generated. 503 if MongoDB or Redis is down.
+Browsers get a simple status page; scripts (or ?format=json) get JSON.
 """
 
 import asyncio
+from pathlib import Path
 from typing import Annotated, Any
 
 from fastapi import APIRouter, Depends, Request, Response, status
+from fastapi.responses import HTMLResponse
 
 from app.campaigns.cache import CampaignCache
 from app.db import AD_VARIANTS, Database
 from app.ranking.model_files import MODEL_RELEASE, MODEL_REPO
 
 router = APIRouter(tags=["health"])
+
+READY_PAGE = Path(__file__).parent / "web" / "ready.html"
 
 
 async def _check(coro: Any) -> str:
@@ -28,8 +33,12 @@ def _state(request: Request) -> Any:
     return request.app.state
 
 
-@router.get("/ready")
-async def ready(response: Response, state: Annotated[Any, Depends(_state)]) -> dict[str, Any]:
+@router.get("/ready", response_model=None)
+async def ready(
+    request: Request, response: Response, state: Annotated[Any, Depends(_state)], format: str | None = None
+) -> dict[str, Any] | HTMLResponse:
+    if format != "json" and "text/html" in request.headers.get("accept", ""):
+        return HTMLResponse(READY_PAGE.read_text())
     db: Database = state.db
     cache: CampaignCache = state.campaign_cache
     mongo = await _check(db.command("ping"))

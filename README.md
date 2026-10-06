@@ -1,235 +1,148 @@
-# Simula API Take Home
+# Simula Native Ads API
 
-## Overview
+A native ad server for AI-companion chat apps. It manages campaigns and ad sets, resolves users into
+sessions, and serves sponsored-character ads into a feed. Ads are ranked by a LightGBM + factorization-machine
+click model, and their copy is written by an LLM ahead of time through Temporal.
 
-Now that you have a CTR model and a candidate ranking algorithm, we want you to build the rest of the native-ad serving system around it.
+Built for the [Simula API take-home](docs/assignment.md): FastAPI · MongoDB · Redis · Temporal ·
+Cloud Run.
 
-There are three pieces you will be implementing:
+- **Live:** _the deployed URL goes here_ (landing page, `/demo`, `/docs`, `/ready`)
+- **Sample output:** [samples/](samples/), the README's sample requests run against the deployed service
 
-1. Endpoints for managing campaigns, ad sets, and ad variants.
-2. An endpoint for session management.
-3. An endpoint for serving native ads.
+## Run it locally (about 5 minutes)
 
-## What you get
-
-1. Sample native campaigns, ad sets and ad variants:
-   - [`data/campaigns.json`](data/campaigns.json)
-   - [`data/ad_sets.json`](data/ad_sets.json)
-   - [`data/ad_variants.json`](data/ad_variants.json)
-2. An HTML container to render the served assets/copy in (more on this in the ad serving section):
-   - [`template/character_ad.html`](template/character_ad.html) — the native ad template, with `{{ PLACEHOLDER }}` fields you fill in at serve time (see [Template placeholders](#template-placeholders)).
-   - [`template/test_harness.html`](template/test_harness.html) — open this locally to preview the rendered template in a scrollable feed.
-3. Sample request/response structures (inline throughout this document).
-4. An IP → country database: [`data/GeoLite2-City-Test.mmdb`](data/GeoLite2-City-Test.mmdb) (see [Test IPs](#test-ips)).
-5. The LLM prompt for generating the character's message: [`prompts/character_dialogue.md`](prompts/character_dialogue.md).
-
-## Goals
-
-### Setup
-
-1. Set up a cache and database of your choice.
-2. Create collections for Campaigns, AdSets, AdVariants, and Serves. Definitions for each of these objects will be outlined in the following sections, but it's up to you to create the models.
-3. Load sample Campaigns, AdSets and AdVariants from these files:
-   - [`data/campaigns.json`](data/campaigns.json)
-   - [`data/ad_sets.json`](data/ad_sets.json)
-   - [`data/ad_variants.json`](data/ad_variants.json)
-4. Set up a Temporal account (https://temporal.io/). You will need Temporal for at least one of the parts of this assignment.
-
-### Campaign Routes
-
-A campaign represents an advertiser's app or offer being promoted. It holds the campaign-level targeting (geo, OS), budget, store / redirect links, and references to the ad sets that carry its creatives.
-
-1. Create a set of endpoints to create, read, update, and delete campaigns in the cache and database. `campaign_id`, `created_at`, `updated_at`, and `active` are API owned. The rest are settable via the endpoints below.
-
-`POST /campaigns` — create a campaign.
+You need [Docker Desktop](https://www.docker.com/products/docker-desktop/) and
+[uv](https://docs.astral.sh/uv/getting-started/installation/). uv installs Python 3.13 by itself.
 
 ```bash
-curl -X POST {{API_URL}}/campaigns \
-  -H "Content-Type: application/json" \
-  -d '{
-    "campaign_name": "Baba Casino — Summer Push",
-    "advertiser_company_id": "acmp_baba",
-    "daily_budget": 500.0,
-    "geo_targets": ["US", "CA"],
-    "os_targets": ["ios", "android"],
-    "attribution_provider": "appsflyer",
-    "ios_store_url": "https://apps.apple.com/app/id1234567890",
-    "android_store_url": "https://play.google.com/store/apps/details?id=com.baba.casino",
-    "native_ad_set_ids": ["adset_native_a"]
-  }'
+git clone -b v1 https://github.com/rfoxes/Recommendation-Systems-Deployment.git
+cd Recommendation-Systems-Deployment
+cp .env.example .env            # works as-is; optionally add an LLM key (see below)
+docker compose up -d --wait     # MongoDB (one-node replica set), Redis, Temporal dev server
+uv sync                         # creates .venv with the pinned dependencies
+uv run python -m app.seed       # loads data/*.json (insert-only, safe to re-run)
+uv run uvicorn app.main:app     # first start downloads the CTR model (~3 MB) from its GitHub release
 ```
 
-Required: `campaign_name`, `advertiser_company_id`. New campaigns default to inactive.
+Then open:
 
-`GET /campaigns` — list campaigns (filters: `ids`, `surface`, `publisher_id`, `active`).
+| URL | What it is |
+|---|---|
+| http://localhost:8000 | Landing page with live status |
+| http://localhost:8000/demo | The provided test harness serving **real ads**. Pick a README test IP and a device. |
+| http://localhost:8000/docs | Every endpoint, with "Try it out" |
+| http://localhost:8000/ready | Readiness of each dependency: a page in a browser, JSON for scripts |
+| http://localhost:8233 | Temporal UI: the hourly cache-refresh schedule and copy-generation workflows |
+
+**No keys are needed.** Without an LLM key, ads use each ad set's `fallback_copy`. To get LLM-written copy,
+set `LLM_PROVIDER` and that provider's key in `.env` and restart. Gemini has a free key at
+[aistudio.google.com](https://aistudio.google.com). Copy for every variant is generated in the background
+within a few minutes; `/ready` shows progress.
+
+## Try the API
+
+Country comes from the IP, and the README's test IPs can be sent in `X-Forwarded-For`. OS comes from the
+`User-Agent`.
 
 ```bash
-curl "{{API_URL}}/campaigns?surface=native&active=true"
+# A session for a user (ppid), or for the caller's IP if ppid is omitted
+curl -s -X POST localhost:8000/session/create -H 'Content-Type: application/json' \
+  -H 'X-Forwarded-For: 214.78.0.1' -d '{"ppid": "user_42"}'
+
+# Serve an ad into feed slot 3 (US test IP, iPhone)
+curl -s -X POST localhost:8000/load/native -H 'Content-Type: application/json' \
+  -H 'X-Forwarded-For: 214.78.0.1' -A 'Mozilla/5.0 (iPhone; CPU iPhone OS 18_0 like Mac OS X)' \
+  -d '{"position": 3, "session_id": "<session_id>", "context": {"searchTerm": "space adventure",
+       "tags": ["sci-fi", "rpg"], "category": "roleplay", "title": "Galaxy Companion", "nsfw": false}}'
+
+# Campaigns: create (safe to retry with the same Idempotency-Key), list, update, delete
+curl -s -X POST localhost:8000/campaigns -H 'Content-Type: application/json' -H 'Idempotency-Key: demo-1' \
+  -d '{"campaign_name": "Demo — US", "advertiser_company_id": "acmp_demo", "geo_targets": ["US"],
+       "os_targets": ["ios"], "ios_store_url": "https://apps.apple.com/app/id1"}'
+curl -s 'localhost:8000/campaigns?surface=native&active=true'
+curl -s -X PATCH localhost:8000/campaigns/<campaign_id> -H 'Content-Type: application/json' -d '{"active": true}'
+
+# Ad set: its variants are every combination of the asset lists
+curl -s -X POST localhost:8000/adsets -H 'Content-Type: application/json' \
+  -d '{"campaign_id": "<campaign_id>", "ad_set_name": "Heroes", "character_names": ["Luna", "Rex"],
+       "video_urls": ["https://storage.googleapis.com/simula-public/assets/simula-campaigns/1781322499823-8.mp4"],
+       "ctas": ["Play Free", "Install Now"], "ai_prompts": ["Excitedly tell a friend about the daily bonus."],
+       "fallback_copy": ["Check this out!"]}'
 ```
 
-`GET /campaigns/{campaign_id}` — fetch a single campaign.
+| Test IP | Country |
+|---|---|
+| 214.78.0.1 | US |
+| 2.125.160.217 | GB |
+| 89.160.20.113 | SE |
+| 175.16.199.1 | CN |
+| 202.196.224.1 | PH |
+| 67.43.156.1 | BT |
+
+| Status | Meaning |
+|---|---|
+| 200 | An ad was served |
+| 204 | No eligible campaign (geo, OS, store link or brand safety) |
+| 404 | Unknown session or campaign |
+| 422 | Invalid request |
+| 429 | Too many sessions from one IP (30 a minute) |
+
+## Tests
 
 ```bash
-curl {{API_URL}}/campaigns/camp_abc
+uv run pytest                                                 # 46 tests; needs `docker compose up`
+uv run python scripts/smoke_test.py http://localhost:8000     # end to end; add --allow-fallback without an LLM key
+uv run python scripts/sample_output.py http://localhost:8000  # writes samples/
 ```
 
-`PATCH /campaigns/{campaign_id}` — update the given fields.
+- **`pytest`:** model validation, seeding, the campaign routes, cache consistency under concurrent writes,
+  the in-memory serving catalog, and the Temporal workflow and schedule.
+- **The smoke test:** 21 checks against a running deployment, from dependencies to clicks. It fails if ad
+  copy came from the fallback.
 
-```bash
-curl -X PATCH {{API_URL}}/campaigns/camp_abc \
-  -H "Content-Type: application/json" \
-  -d '{"active": true, "daily_budget": 750.0}'
+## How it works
+
+| README part | Implementation |
+|---|---|
+| Setup | MongoDB is the source of truth, run as a replica set so multi-document transactions work. Redis holds the campaign cache, sessions, a feature store and rate limits. Temporal runs the scheduled and background jobs. |
+| Campaign routes | CRUD with a write-through Redis cache: versioned writes, so concurrent updates can't go backwards, and an atomic swap on refresh. An hourly Temporal schedule rebuilds the cache from MongoDB. DELETE cascades to ad sets and variants in one transaction. |
+| Ad set routes | Variants are the cartesian product of the asset lists, de-duplicated and capped at 500. The ad set, its variants and the campaign link commit in one transaction. `Idempotency-Key` makes retries safe. |
+| Sessions | The user comes from `ppid`, otherwise the IP. Get-or-create is one atomic Redis step. Sessions expire after 30 s without an ad serve, using Redis key expiry. Each IP is rate-limited. |
+| Ad serving | Session, then GeoIP country and user-agent OS, then eligibility (geo, OS, store link, brand safety), then features, the CTR model and the ranker, then a random ad set and variant with a repeat cap, LLM copy and the rendered template. The serve record is written in a batch after the response. |
+| CTR model + ranker | V1 (LightGBM + factorization machine) from [rfoxes/Recommendation-Systems](https://github.com/rfoxes/Recommendation-Systems), downloaded from a pinned release and checked against a golden sample at startup. Scoring uses numpy and LightGBM, no PyTorch. Its exploration-aware ranker is adapted to one request at a time. |
+| LLM copy | Generated per variant by a Temporal workflow, on a rate-limited task queue. `LLM_PROVIDER` picks Gemini, Claude or OpenAI. A live call with a short timeout covers variants without lines yet, then the fallback copy. |
+| Clicks | `POST /impressions/{id}/click`, called by the ad's CTA, authorized with a click-only key and counted once per impression. |
+
+## Configuration
+
+Everything comes from environment variables or `.env`; see [.env.example](.env.example). The main ones:
+
+| Variable | Default | |
+|---|---|---|
+| `MONGO_URI`, `MONGO_DB` | local replica set, `simula` | |
+| `REDIS_URL` | `redis://localhost:6379/0` | |
+| `TEMPORAL_ADDRESS`, `TEMPORAL_NAMESPACE`, `TEMPORAL_API_KEY` | local dev server | Set all three for Temporal Cloud |
+| `LLM_PROVIDER` | `gemini` | `gemini`, `anthropic` or `openai` |
+| `GEMINI_API_KEY`, `ANTHROPIC_API_KEY`, `OPENAI_API_KEY` | unset | Only the chosen provider's key is needed |
+| `LLM_MODEL` | provider default | `gemini-3.5-flash-lite`, `claude-opus-5-5`, `gpt-5.4-mini` |
+| `API_URL`, `CLICK_API_KEY` | `http://localhost:8000`, `dev-click-key` | Embedded in each ad for click tracking |
+
+## Deploy (Google Cloud Run, free tier)
+
+`scripts/deploy.sh` reads `.env.cloud` (template: [.env.cloud.example](.env.cloud.example)). It stores
+secrets in Secret Manager and deploys one container (API plus Temporal worker) that scales to zero with at
+most one instance. The image is built by Cloud Build from the [Dockerfile](Dockerfile).
+
+## Layout
+
 ```
-
-`DELETE /campaigns/{campaign_id}` — delete a campaign.
-
-```bash
-curl -X DELETE {{API_URL}}/campaigns/camp_abc
+app/
+  campaigns/  adsets/  sessions/   routes and storage for each README part
+  serving/    ranking/  features/   /load/native, GeoIP, rendering, CTR model, ranker, feature store
+  copywriting/  temporal/           LLM providers, workflows, schedule, worker
+  demo/  web/  health.py            /demo harness, landing and readiness pages
+data/  template/  prompts/          provided assets (seed data, ad template, LLM prompt, GeoIP database)
+scripts/                            smoke test, sample output, deploy
+tests/
 ```
-
-2. Set up a cache for the campaigns so they can be read more quickly at serve time. Connect the endpoints to the cache.
-3. Create a Temporal schedule that reads campaigns from the database and updates the cache every 1 hour.
-
-### Adset Routes
-
-An ad set is a group of creative assets for a campaign — characters, videos, CTAs, and AI prompts. An ad variant is one specific combination of those assets (a single character + video + CTA + prompt), and is what actually gets rendered at serve time.
-
-1. Create an endpoint to create an ad set. Creating an ad set should generate its variants — the cartesian product of the asset lists — and link it to the campaign.
-
-`POST /adsets` — create an ad set.
-
-```bash
-curl -X POST {{API_URL}}/adsets \
-  -H "Content-Type: application/json" \
-  -d '{
-    "campaign_id": "camp_abc",
-    "ad_set_name": "Baba — Hero Characters",
-    "character_names": ["Luna", "Rex"],
-    "video_urls": ["https://cdn.simula.ad/baba/luna.mp4"],
-    "ctas": ["Play Free", "Install Now"],
-    "ai_prompts": ["Excitedly tell a friend about the daily bonus."],
-    "fallback_copy": ["Check this out!"]
-  }'
-```
-
-### Session Management
-
-A session represents a continuous engagement window for a single user. Every serve is tied to a `session_id`.
-
-1. Create a `POST /session/create` route that resolves the caller to a stable user and returns a session id.
-
-`POST /session/create` — resolve-or-create a session.
-
-```bash
-curl -X POST {{API_URL}}/session/create \
-  -H "Content-Type: application/json" \
-  -d '{ "ppid": "user_42" }'
-```
-
-Response: `{ "session_id": "sess_1234" }`. The user is resolved from `ppid`, or the request's ip address if `ppid` is not passed.
-
-2. Only mint a new session after 30s of inactivity. For this assignment, use ad serves as a proxy for activity.
-
-### Ad Serving
-
-At a high level, the ad-serving workflow looks like this:
-
-```mermaid
-graph LR
-  Request --> FetchSession --> FetchAvailableCampaigns --> GeoFilters --> OSFilters --> Ranking --> VariantSelection --> RenderVariant & WriteServe
-```
-
-1. Set up an endpoint that fetches a native ad based on this sample request:
-
-`POST /load/native` — serve a native sponsored-character ad for a feed slot.
-
-```bash
-curl -X POST {{API_URL}}/load/native \
-  -H "Content-Type: application/json" \
-  -d '{
-    "position": 3,
-    "session_id": "sess_1234",
-    "context": {
-      "searchTerm": "space adventure",
-      "tags": ["sci-fi", "rpg"],
-      "category": "roleplay",
-      "title": "Galaxy Companion",
-      "nsfw": false
-    }
-  }'
-```
-
-Required: `position` (feed index), `session_id`. Optional: `context` (relevance signals).
-
-The response returns the `impression_id` of the serve and the raw HTML of the rendered template:
-
-```json
-{
-  "impression_id": "imp_5678",
-  "rendered_html": "<!DOCTYPE html><html lang=\"en\" data-theme=\"dark\">..."
-}
-```
-
-2. Fetch the user's country and operating system based on their IP address and user-agent. For IP → country mapping, use this database: [`data/GeoLite2-City-Test.mmdb`](data/GeoLite2-City-Test.mmdb).
-3. Filter out campaigns that do not match the user's country and operating system.
-4. Rank the remaining campaigns using your CTR model and ranker. Think about a good way to store user and context features so your models can easily access them at inference time.
-5. Select a random ad set and ad variant for the campaign you choose.
-6. Generate the ad copy for the selected variant by passing its `ai_prompt` to an LLM, and use the returned text as the character's message in the rendered template. Use the prompt in [`prompts/character_dialogue.md`](prompts/character_dialogue.md) — fill `{{CHAR_NAME}}` with the variant's `character_name` and `{{ai_prompt}}` with the variant's `ai_prompt`. If the call fails, fall back to the ad set's `fallback_copy`.
-7. Fill in the placeholder fields on the HTML template using the corresponding fields from the campaign and the ad variant.
-8. Create a data model to store the contents of a serve. Use this model to write the serve async to your database.
-9. Containerize your app and deploy it to a public endpoint on GCP / AWS.
-
-## Reference
-
-### Template placeholders
-
-[`template/character_ad.html`](template/character_ad.html) contains `{{ PLACEHOLDER }}` fields to fill at render time:
-
-| Placeholder | Meaning |
-| --- | --- |
-| `{{ CHAR_NAME }}` | Character name for the variant |
-| `{{ CAMPAIGN }}` | Campaign / advertiser handle shown as the author |
-| `{{ CHAR_MESSAGE }}` | The character's message (LLM-generated copy, or fallback) |
-| `{{ CTA }}` | Call-to-action button label |
-| `{{ MEDIA_URL }}` | Creative video/image URL (the `{{#MEDIA_IS_VIDEO}}` / `{{^MEDIA_IS_VIDEO}}` sections toggle `<video>` vs `<img>`) |
-| `{{ TRACKING_URL }}` | Click-through destination (store / redirect URL) |
-| `{{ IMPRESSION_URL }}` | Impression pixel URL (may be empty) |
-| `{{ AD_ID }}` | Impression id of this serve |
-| `{{ API_URL }}` / `{{ API_KEY }}` | Your API base URL / key, used by the click tracker |
-| `{{ THEME }}` | `dark` or `light` |
-| `{{ DOWNLOADS }}` | Download-count text (e.g. `1.2M`) |
-
-To preview your rendered output locally, open [`template/test_harness.html`](template/test_harness.html) in a browser (it loads `character_ad.html` from the same directory).
-
-### Test IPs
-
-`data/GeoLite2-City-Test.mmdb` is MaxMind's GeoLite2 **test** database — it only resolves a fixed set of test networks, not arbitrary real-world IPs. Use these (e.g. via an `X-Forwarded-For` header) to exercise geo filtering:
-
-| IP | Country |
-| --- | --- |
-| `214.78.0.1` | US |
-| `2.125.160.217` | GB |
-| `89.160.20.113` | SE |
-| `175.16.199.1` | CN |
-| `202.196.224.1` | PH |
-| `67.43.156.1` | BT |
-
-Note: the sample media URLs in the seed data are illustrative creative assets; any publicly reachable video URL works.
-
-## Deliverables
-
-- Code: your app and public endpoint.
-- A brief recording explaining what you did and why — highlight the reasoning and trade-offs.
-- Sample output (optional): e.g., served ads for sample requests.
-
-You can use any libraries or AI tools, as long as your work and reasoning are original.
-
-> 📬 Ready to submit your deliverable? Use the link below to submit and email Yizhen that you've completed the assignment.
->
-> [Submit your Deliverable here →](https://app.notion.com/p/367af70f6f0d80558698f073c602aca8?pvs=21)
-
-## What we're looking for
-
-- **Functionality**: Does your submission work reliably? Are edge cases covered? Are errors handled gracefully?
-- **Code Quality**: Syntax, Typing, Structure, Tests etc.
-- **Clarity**: Are your write-up and choices easy to follow?
