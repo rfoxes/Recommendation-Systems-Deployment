@@ -71,6 +71,11 @@ class ActiveCatalog:
             self._checked_at = time.monotonic()
         return self._items
 
+    def invalidate(self) -> None:
+        """Re-check on the next request: this instance just changed a campaign, so don't wait out the interval.
+        (Other instances still notice within `check_interval`.)"""
+        self._checked_at = float("-inf")
+
     def _is_fresh(self) -> bool:
         return self._loaded and time.monotonic() - self._checked_at < self._check_interval
 

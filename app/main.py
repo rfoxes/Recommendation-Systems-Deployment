@@ -91,6 +91,7 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
         db, store, idempotency, on_created=temporal.start_copy_generation if temporal else None
     )
     app.state.catalog = ActiveCatalog(db, store, cache)
+    store.on_change(app.state.catalog.invalidate)  # this instance's own writes take effect immediately
     app.state.copy_generator = generator
     app.state.session_store = SessionStore(
         redis,

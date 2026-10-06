@@ -6,6 +6,7 @@ Reads go to Redis first and fall back to MongoDB if Redis misses or is unavailab
 """
 
 import logging
+from collections.abc import Callable
 
 from pymongo import ReturnDocument
 from pymongo.asynchronous.client_session import AsyncClientSession
@@ -36,6 +37,15 @@ class CampaignStore:
         self._db = db
         self._cache = cache
         self._idempotency = idempotency
+        self._on_change: list[Callable[[], None]] = []
+
+    def on_change(self, listener: Callable[[], None]) -> None:
+        """Call `listener` after every campaign write made by this instance (e.g. to refresh the serving catalog)."""
+        self._on_change.append(listener)
+
+    def _changed(self) -> None:
+        for listener in self._on_change:
+            listener()
 
     async def create(self, data: CampaignCreate, request: IdempotentRequest | None = None) -> Campaign:
         if saved := await self._idempotency.saved_response(request):
@@ -162,6 +172,7 @@ class CampaignStore:
             await self._cache.remove(campaign_id)
         except RedisError:
             logger.warning("Campaign cache delete failed for %s", campaign_id, exc_info=True)
+        self._changed()
 
     async def put_in_cache(self, campaign: Campaign) -> None:
         """Best-effort cache write (MongoDB is already committed; a refresh repairs any miss)."""
@@ -169,6 +180,7 @@ class CampaignStore:
             await self._cache.put(campaign)
         except RedisError:
             logger.warning("Campaign cache write failed for %s", campaign.campaign_id, exc_info=True)
+        self._changed()
 
     async def _check_ad_sets(self, ad_set_ids: list[str]) -> None:
         if not ad_set_ids:

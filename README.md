@@ -42,6 +42,15 @@ within a few minutes; `/ready` shows progress.
 
 ## Try the API
 
+The quickest tour is one command. It runs the README flow, every GeoIP test IP, brand safety, error cases and
+clicks, then a full campaign lifecycle: create → ad set → Temporal writes LLM copy → serve → delete.
+
+```bash
+scripts/demo.sh http://localhost:8000            # add PAUSE=1 to step through it
+```
+
+Or by hand:
+
 Country comes from the IP, and the README's test IPs can be sent in `X-Forwarded-For`. OS comes from the
 `User-Agent`.
 
@@ -91,7 +100,7 @@ curl -s -X POST localhost:8000/adsets -H 'Content-Type: application/json' \
 ## Tests
 
 ```bash
-uv run pytest                                                 # 124 tests; needs `docker compose up`
+uv run pytest                                                 # 125 tests; needs `docker compose up`
 uv run ruff check . && uv run ruff format --check . && uv run mypy   # lint, format, strict typing
 uv run python scripts/smoke_test.py http://localhost:8000     # end to end; add --allow-fallback without an LLM key
 uv run python scripts/sample_output.py http://localhost:8000  # writes samples/

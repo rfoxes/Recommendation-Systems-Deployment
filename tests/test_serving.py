@@ -129,3 +129,11 @@ def test_ad_requests_are_rate_limited_per_ip(serve_limit_of_three: None, client:
     assert (
         serve(client, "2.125.160.217", ANDROID, "other_ip").status_code == 204
     )  # other IPs unaffected (no fill in GB)
+
+
+def test_a_deleted_or_deactivated_campaign_stops_serving_immediately(client: TestClient) -> None:
+    # No sleep: the instance that made the change re-checks its serving catalog on the very next request.
+    client.patch("/campaigns/camp_galaxy", json={"active": False})
+    assert campaigns_served(client, "214.78.0.1", IPHONE, runs=6) == {"Baba Casino"}
+    assert client.delete("/campaigns/camp_baba").status_code == 204
+    assert serve(client, "214.78.0.1", IPHONE, "after_delete").status_code == 204
