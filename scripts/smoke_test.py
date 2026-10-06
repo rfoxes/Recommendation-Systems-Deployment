@@ -136,12 +136,6 @@ def main() -> None:
         )
         if llm_ok:
             check(FALLBACK[0] not in html, "character message is LLM copy, not fallback copy")
-        nsfw = c.post(
-            "/load/native",
-            json={"position": 3, "session_id": s1.json()["session_id"], "context": {"nsfw": True}},
-            headers={"X-Forwarded-For": BT_IP, "User-Agent": IPHONE},
-        )
-        check(nsfw.status_code == 204, "brand safety: an sfw-only campaign doesn't serve in an nsfw chat")
 
         # 7. Clicks
         imp = served.json()["impression_id"]

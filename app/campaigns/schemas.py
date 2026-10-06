@@ -5,7 +5,7 @@ from typing import Any, Self
 
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
-from app.models import OS, Campaign, CampaignFields, CountryCode, NonEmptyStr, SafetyTier, Surface, Url
+from app.models import OS, Campaign, CampaignFields, CountryCode, NonEmptyStr, Surface, Url
 
 
 class CampaignCreate(CampaignFields):
@@ -25,7 +25,6 @@ _NON_NULLABLE = frozenset(
         "geo_targets",
         "os_targets",
         "native_ad_set_ids",
-        "max_safety_tier",
     }
 )
 
@@ -50,7 +49,6 @@ class CampaignUpdate(BaseModel):
     ios_store_url: Url | None = None
     android_store_url: Url | None = None
     native_ad_set_ids: list[str] | None = None
-    max_safety_tier: SafetyTier | None = None
     downloads_label: str | None = None
 
     @model_validator(mode="after")

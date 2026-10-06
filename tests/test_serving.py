@@ -73,31 +73,11 @@ def test_activating_a_campaign_makes_it_eligible_within_a_second(client: TestCli
         assert serve(client, ip, IPHONE).status_code == 204  # Kitchen targets Android only
 
 
-def test_brand_safety(client: TestClient) -> None:
-    nsfw = {**README_CONTEXT, "nsfw": True}
-    assert serve(client, "214.78.0.1", IPHONE, context=nsfw).status_code == 204  # campaigns default to sfw-only
-    client.patch("/campaigns/camp_galaxy", json={"max_safety_tier": "mature"})
-    time.sleep(1.1)
-    assert serve(client, "214.78.0.1", IPHONE, context=nsfw).status_code == 200
-
-
 def test_unknown_session_and_bad_requests(client: TestClient) -> None:
     body = {"position": 3, "session_id": "sess_nope"}
     assert client.post("/load/native", json=body, headers={"User-Agent": IPHONE}).status_code == 404
     assert client.post("/load/native", json={"position": -1, "session_id": "s"}).status_code == 422
     assert client.post("/load/native", json={"session_id": "s"}).status_code == 422
-
-
-@pytest.fixture
-def cap_of_one(monkeypatch: pytest.MonkeyPatch) -> Iterator[None]:
-    monkeypatch.setenv("FATIGUE_CAP", "1")
-    yield
-
-
-def test_repeat_cap_exhausts_then_no_fill(cap_of_one: None, client: TestClient) -> None:
-    # A US iPhone user can see 3 active Baba variants + 4 Galaxy variants once each, then nothing.
-    statuses = [serve(client, "214.78.0.1", IPHONE, "capped_user").status_code for _ in range(8)]
-    assert statuses == [200] * 7 + [204]
 
 
 def test_clicks(client: TestClient, mongo) -> None:

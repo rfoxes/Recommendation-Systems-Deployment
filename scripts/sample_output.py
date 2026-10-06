@@ -71,14 +71,6 @@ SCENARIOS = [  # (slug, description, test IP, user agent, ppid, context)
     ("ph_iphone", "PH, iPhone (no campaign targets PH)", "202.196.224.1", IPHONE, "sample_user_9", README_CONTEXT),
     ("bt_android", "BT, Android (no campaign targets BT)", "67.43.156.1", ANDROID, "sample_user_10", README_CONTEXT),
     (
-        "us_iphone_nsfw_chat",
-        "US, iPhone, NSFW chat (campaigns are sfw-only by default)",
-        "214.78.0.1",
-        IPHONE,
-        "sample_user_6",
-        {**README_CONTEXT, "nsfw": True},
-    ),
-    (
         "us_desktop",
         "US, desktop browser (campaigns target iOS/Android)",
         "214.78.0.1",

@@ -8,8 +8,6 @@ from pydantic import BaseModel, ConfigDict, Field, HttpUrl, PlainSerializer, Str
 
 OS = Literal["ios", "android"]
 Surface = Literal["native"]
-SafetyTier = Literal["sfw", "suggestive", "mature"]  # the CTR model's character safety tiers, least to most explicit
-SAFETY_RANK: dict[str, int] = {"sfw": 0, "suggestive": 1, "mature": 2}
 CountryCode = Annotated[str, StringConstraints(pattern=r"^[A-Z]{2}$")]  # ISO 3166-1 alpha-2
 # Validated as a URL, stored as a plain string so it can be written to the database as-is.
 Url = Annotated[HttpUrl, PlainSerializer(str, return_type=str)]
@@ -47,8 +45,6 @@ class CampaignFields(BaseModel):
     ios_store_url: Url | None = None
     android_store_url: Url | None = None
     native_ad_set_ids: list[str] = []
-    # Brand safety: the most explicit chat context this advertiser accepts (defaults to the strictest).
-    max_safety_tier: SafetyTier = "sfw"
     downloads_label: str | None = None  # shown on the ad, e.g. "1.2M"
 
 

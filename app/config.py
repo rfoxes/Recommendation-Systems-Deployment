@@ -34,7 +34,6 @@ class Settings(BaseSettings):
     api_url: str = "http://localhost:8000"  # public base URL embedded in ads for click tracking
     click_api_key: SecretStr = SecretStr("dev-click-key")  # publishable: ships inside ad HTML, can only record clicks
     ad_theme: Literal["dark", "light"] = "dark"
-    fatigue_cap: int = 3  # max times one variant is shown to one user per 24h
     live_copy_timeout_seconds: float = 1.5  # only when a variant has no pre-generated lines yet
     toss_up_explore_share: float = 0.10  # ranker: share of toss-ups that go to the least-known campaign
     cold_explore_share: float = 0.05  # ranker: share of picks that may go to a promising cold campaign

@@ -177,25 +177,6 @@
     "session_status": 201,
     "response": null
   },
-  "us_iphone_nsfw_chat": {
-    "request": {
-      "position": 3,
-      "session_id": "sess_f66aa88cf873",
-      "context": {
-        "searchTerm": "space adventure",
-        "tags": [
-          "sci-fi",
-          "rpg"
-        ],
-        "category": "roleplay",
-        "title": "Galaxy Companion",
-        "nsfw": true
-      }
-    },
-    "status": 204,
-    "session_status": 201,
-    "response": null
-  },
   "us_desktop": {
     "request": {
       "position": 3,

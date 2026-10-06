@@ -100,15 +100,6 @@ POST /load/native   X-Forwarded-For: 67.43.156.1   User-Agent: Mozilla/5.0 (Linu
 
 **204** (no fill: no eligible campaign)
 
-## US, iPhone, NSFW chat (campaigns are sfw-only by default)
-
-```http
-POST /load/native   X-Forwarded-For: 214.78.0.1   User-Agent: Mozilla/5.0 (iPhone; CPU iPhone OS 18_0 …
-{"position": 3, "session_id": "sess_f66aa88cf873", "context": {"searchTerm": "space adventure", "tags": ["sci-fi", "rpg"], "category": "roleplay", "title": "Galaxy Companion", "nsfw": true}}
-```
-
-**204** (no fill: no eligible campaign)
-
 ## US, desktop browser (campaigns target iOS/Android)
 
 ```http
